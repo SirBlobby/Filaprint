@@ -47,6 +47,9 @@ const printJobSchema = new mongoose.Schema({
     type: Date
   },
   notes: String,
+  stl_file: {
+    type: String // Path to uploaded STL file
+  },
   date: {
     type: Date,
     default: Date.now

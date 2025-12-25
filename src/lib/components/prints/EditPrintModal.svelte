@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from "$app/forms";
+	import { browser } from "$app/environment";
 	import Button from "$lib/components/ui/Button.svelte";
 	import Modal from "$lib/components/ui/Modal.svelte";
 	import Input from "$lib/components/ui/Input.svelte";
@@ -45,6 +46,63 @@
 		handleClose();
 		window.location.reload();
 	}
+
+	// STL Upload
+	let stlFile = $state<File | null>(null);
+	let uploadProgress = $state(0);
+	let uploadStatus = $state("");
+
+	function uploadSTL(): Promise<string> {
+		return new Promise((resolve) => {
+			if (!stlFile) {
+				resolve("");
+				return;
+			}
+
+			uploadStatus = "Uploading...";
+			uploadProgress = 0;
+
+			const formData = new FormData();
+			formData.append("stl", stlFile);
+
+			const xhr = new XMLHttpRequest();
+
+			xhr.upload.addEventListener("progress", (e) => {
+				if (e.lengthComputable) {
+					uploadProgress = Math.round((e.loaded / e.total) * 100);
+				}
+			});
+
+			xhr.addEventListener("load", () => {
+				if (xhr.status === 200) {
+					const data = JSON.parse(xhr.responseText);
+					uploadStatus = "Uploaded!";
+					uploadProgress = 100;
+					resolve(data.path);
+				} else {
+					uploadStatus = "Upload failed";
+					resolve("");
+				}
+			});
+
+			xhr.addEventListener("error", () => {
+				uploadStatus = "Upload error";
+				resolve("");
+			});
+
+			xhr.open("POST", "/api/upload-stl");
+			xhr.send(formData);
+		});
+	}
+
+	function handleFileSelect(event: Event) {
+		const input = event.target as HTMLInputElement;
+		if (input.files && input.files[0]) {
+			stlFile = input.files[0];
+			uploadStatus = stlFile.name;
+			uploadProgress = 0;
+		}
+	}
 </script>
 
 <Modal title="Edit Print Log" {open} onclose={handleClose}>
@@ -52,7 +110,17 @@
 		<form
 			method="POST"
 			action="?/edit"
-			use:enhance={({ formData }) => {
+			use:enhance={async ({ formData }) => {
+				isSubmitting = true;
+
+				// Upload STL file first if selected
+				if (stlFile) {
+					const uploadedPath = await uploadSTL();
+					if (uploadedPath) {
+						formData.set("stl_file", uploadedPath);
+					}
+				}
+
 				// Convert hours + minutes to total minutes
 				const hours = Number(formData.get("duration_hours") || 0);
 				const mins = Number(formData.get("duration_mins") || 0);
@@ -66,7 +134,6 @@
 					String(elapsedHours * 60 + elapsedMins),
 				);
 
-				isSubmitting = true;
 				return async ({ update }) => {
 					await update();
 					isSubmitting = false;
@@ -145,6 +212,95 @@
 			</div>
 
 			<Input label="Print Name" name="name" value={print.name} required />
+
+			<!-- STL Viewer/Upload -->
+			<div class="space-y-2">
+				<!-- svelte-ignore a11y_label_has_associated_control -->
+				<label
+					class="block text-xs font-medium text-slate-400 uppercase tracking-wider"
+				>
+					3D Model {print.stl_file ? "" : "(Optional)"}
+				</label>
+
+				{#if print.stl_file && browser && !stlFile}
+					<!-- Show existing STL viewer -->
+					<div
+						class="flex justify-center bg-slate-900 rounded-lg p-2"
+					>
+						{#await import("$lib/components/STLViewer.svelte") then { default: STLViewer }}
+							<STLViewer
+								modelPath={print.stl_file}
+								width={400}
+								height={250}
+							/>
+						{/await}
+					</div>
+					<p class="text-xs text-slate-500 text-center">
+						Click below to replace with a new model
+					</p>
+				{/if}
+
+				<!-- Upload button or progress -->
+				{#if uploadStatus === "Uploading..." && uploadProgress > 0}
+					<!-- Progress Bar -->
+					<div class="space-y-2">
+						<div class="flex items-center justify-between text-xs">
+							<span class="text-slate-400">{stlFile?.name}</span>
+							<span class="text-blue-400">{uploadProgress}%</span>
+						</div>
+						<div
+							class="w-full h-2 bg-slate-800 rounded-full overflow-hidden"
+						>
+							<div
+								class="h-full bg-blue-500 rounded-full transition-all duration-150"
+								style="width: {uploadProgress}%"
+							></div>
+						</div>
+					</div>
+				{:else}
+					<div class="flex items-center gap-3">
+						<label class="flex-1 cursor-pointer">
+							<div
+								class="flex items-center justify-center gap-2 py-3 px-4 rounded-lg border border-dashed border-slate-600 hover:border-blue-500 hover:bg-blue-500/5 transition-all text-slate-400 hover:text-blue-400"
+							>
+								<Icon icon="mdi:file-upload" class="w-5 h-5" />
+								<span class="text-sm">
+									{#if uploadStatus === "Uploaded!"}
+										<span class="text-green-400"
+											>✓ {stlFile?.name}</span
+										>
+									{:else if uploadStatus}
+										{uploadStatus}
+									{:else if print.stl_file}
+										Replace model file...
+									{:else}
+										Choose model file...
+									{/if}
+								</span>
+							</div>
+							<input
+								type="file"
+								accept=".stl,.obj"
+								class="sr-only"
+								onchange={handleFileSelect}
+							/>
+						</label>
+						{#if stlFile}
+							<button
+								type="button"
+								class="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+								onclick={() => {
+									stlFile = null;
+									uploadProgress = 0;
+									uploadStatus = "";
+								}}
+							>
+								<Icon icon="mdi:close" class="w-5 h-5" />
+							</button>
+						{/if}
+					</div>
+				{/if}
+			</div>
 
 			{#if editStatus === "In Progress"}
 				<!-- In Progress specific fields -->

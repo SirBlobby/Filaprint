@@ -10,6 +10,7 @@
 		{ name: "Spools", href: "/spools", icon: "mdi:cylinder" },
 		{ name: "Printers", href: "/printers", icon: "mdi:printer-3d" },
 		{ name: "Prints", href: "/prints", icon: "mdi:cube-outline" },
+		{ name: "Library", href: "/library", icon: "mdi:cube-scan" },
 		{ name: "Analytics", href: "/analytics", icon: "mdi:chart-line" },
 		...($page.data.user?.role === "Admin"
 			? [

@@ -75,9 +75,19 @@
 					</div>
 
 					<div class="flex-1 min-w-0">
-						<h3 class="text-white font-medium truncate">
-							{print.name}
-						</h3>
+						<div class="flex items-center gap-2">
+							<h3 class="text-white font-medium truncate">
+								{print.name}
+							</h3>
+							{#if print.stl_file}
+								<span title="Has 3D Model">
+									<Icon
+										icon="mdi:cube-scan"
+										class="w-4 h-4 text-blue-400 shrink-0"
+									/>
+								</span>
+							{/if}
+						</div>
 						<div
 							class="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs text-slate-400"
 						>

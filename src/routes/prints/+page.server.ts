@@ -44,6 +44,7 @@ export const actions: Actions = {
         const status = formData.get('status');
         const manual_cost = formData.get('manual_cost');
         const elapsed_minutes = formData.get('elapsed_minutes');
+        const stl_file = formData.get('stl_file');
 
         if (!spool_id || !printer_id || !filament_used_g) {
             return fail(400, { missing: true });
@@ -110,6 +111,7 @@ export const actions: Actions = {
                 calculated_cost_energy: Number(costEnergy.toFixed(2)),
                 status,
                 started_at: startedAt,
+                stl_file: stl_file || null,
                 date: new Date()
             });
 
@@ -139,6 +141,7 @@ export const actions: Actions = {
         const elapsed_minutes = formData.get('elapsed_minutes');
         const printer_id = formData.get('printer_id');
         const spool_id = formData.get('spool_id');
+        const stl_file = formData.get('stl_file');
 
         if (!id || !name) {
             return fail(400, { missing: true });
@@ -214,6 +217,10 @@ export const actions: Actions = {
             }
             if (spool_id) {
                 updateData.spool_id = spool_id;
+            }
+            // Update STL file if provided
+            if (stl_file) {
+                updateData.stl_file = stl_file;
             }
 
             await PrintJob.findOneAndUpdate(
