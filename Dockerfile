@@ -16,7 +16,7 @@ COPY . .
 RUN bun run build
 
 # Production stage
-FROM oven/bun:1-slim AS production
+FROM oven/bun:1 AS production
 
 WORKDIR /app
 
@@ -42,17 +42,6 @@ ENV PORT=3000
 
 # Expose the port
 EXPOSE 3000
-
-# Create a non-root user
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 filaprint && \
-    chown -R filaprint:nodejs /app
-
-USER filaprint
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:3000/ || exit 1
 
 # Start the application
 CMD ["bun", "run", "start"]
