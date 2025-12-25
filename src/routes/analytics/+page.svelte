@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from "svelte";
 	import { goto } from "$app/navigation";
 	import Chart from "chart.js/auto";
 	import Card from "$lib/components/ui/Card.svelte";
@@ -9,10 +8,15 @@
 	let { data } = $props();
 	let analytics = $derived(data.analytics);
 
+	// svelte-ignore non_reactive_update
 	let timelineCanvas: HTMLCanvasElement;
+	// svelte-ignore non_reactive_update
 	let pieCanvas: HTMLCanvasElement;
+	// svelte-ignore non_reactive_update
 	let electricityCanvas: HTMLCanvasElement;
+	// svelte-ignore non_reactive_update
 	let costCanvas: HTMLCanvasElement;
+	// svelte-ignore non_reactive_update
 	let printerCanvas: HTMLCanvasElement;
 
 	// Time range options
@@ -23,10 +27,9 @@
 		{ value: "365", label: "1 Year" },
 		{ value: "all", label: "All Time" },
 	];
-	let selectedRange = $state(analytics.range);
+	let selectedRange = $derived(analytics.range);
 
 	function changeRange(range: string) {
-		selectedRange = range;
 		goto(`/analytics?range=${range}`);
 	}
 
@@ -49,7 +52,21 @@
 		return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
 	}
 
-	onMount(() => {
+	// Chart instances
+	let timelineChart: Chart | null = null;
+	let pieChart: Chart | null = null;
+	let electricityChart: Chart | null = null;
+	let costChart: Chart | null = null;
+	let printerChart: Chart | null = null;
+
+	$effect(() => {
+		// Cleanup previous charts
+		if (timelineChart) timelineChart.destroy();
+		if (pieChart) pieChart.destroy();
+		if (electricityChart) electricityChart.destroy();
+		if (costChart) costChart.destroy();
+		if (printerChart) printerChart.destroy();
+
 		const chartColors = [
 			"#3b82f6",
 			"#8b5cf6",
@@ -60,170 +77,185 @@
 		];
 
 		// 1. Timeline Chart - Filament Usage
-		const dates = Object.keys(analytics.usageByDate).slice(-30);
-		const weights = dates.map((d) => analytics.usageByDate[d]);
+		if (timelineCanvas) {
+			const dates = Object.keys(analytics.usageByDate).slice(-30);
+			const weights = dates.map((d) => analytics.usageByDate[d]);
 
-		new Chart(timelineCanvas, {
-			type: "line",
-			data: {
-				labels: dates.map((d) =>
-					new Date(d).toLocaleDateString("en-US", {
-						month: "short",
-						day: "numeric",
-					}),
-				),
-				datasets: [
-					{
-						label: "Filament Usage (g)",
-						data: weights,
-						borderColor: "#3b82f6",
-						backgroundColor: "rgba(59, 130, 246, 0.2)",
-						tension: 0.4,
-						fill: true,
-					},
-				],
-			},
-			options: {
-				responsive: true,
-				maintainAspectRatio: false,
-				plugins: {
-					legend: { display: false },
+			timelineChart = new Chart(timelineCanvas, {
+				type: "line",
+				data: {
+					labels: dates.map((d) =>
+						new Date(d).toLocaleDateString("en-US", {
+							month: "short",
+							day: "numeric",
+						}),
+					),
+					datasets: [
+						{
+							label: "Filament Usage (g)",
+							data: weights,
+							borderColor: "#3b82f6",
+							backgroundColor: "rgba(59, 130, 246, 0.2)",
+							tension: 0.4,
+							fill: true,
+						},
+					],
 				},
-				scales: {
-					y: {
-						grid: { color: "rgba(255,255,255,0.1)" },
-						ticks: { color: "#94a3b8" },
+				options: {
+					responsive: true,
+					maintainAspectRatio: false,
+					plugins: {
+						legend: { display: false },
 					},
-					x: {
-						grid: { display: false },
-						ticks: { color: "#94a3b8" },
-					},
-				},
-			},
-		});
-
-		// 2. Material Pie Chart
-		const materials = Object.keys(analytics.materialUsage);
-		const matWeights = materials.map((m) => analytics.materialUsage[m]);
-
-		new Chart(pieCanvas, {
-			type: "doughnut",
-			data: {
-				labels: materials,
-				datasets: [
-					{
-						data: matWeights,
-						backgroundColor: chartColors,
-						borderWidth: 0,
-					},
-				],
-			},
-			options: {
-				responsive: true,
-				maintainAspectRatio: false,
-				plugins: {
-					legend: { position: "right", labels: { color: "#94a3b8" } },
-				},
-			},
-		});
-
-		// 3. Electricity Usage Chart
-		const electricDates = Object.keys(analytics.electricityByDate).slice(
-			-30,
-		);
-		const electricityWh = electricDates.map(
-			(d) => analytics.electricityByDate[d] / 1000,
-		);
-
-		new Chart(electricityCanvas, {
-			type: "bar",
-			data: {
-				labels: electricDates.map((d) =>
-					new Date(d).toLocaleDateString("en-US", {
-						month: "short",
-						day: "numeric",
-					}),
-				),
-				datasets: [
-					{
-						label: "Electricity (kWh)",
-						data: electricityWh,
-						backgroundColor: "rgba(245, 158, 11, 0.6)",
-						borderColor: "#f59e0b",
-						borderWidth: 1,
-						borderRadius: 4,
-					},
-				],
-			},
-			options: {
-				responsive: true,
-				maintainAspectRatio: false,
-				plugins: {
-					legend: { display: false },
-				},
-				scales: {
-					y: {
-						grid: { color: "rgba(255,255,255,0.1)" },
-						ticks: { color: "#94a3b8" },
-						title: { display: true, text: "kWh", color: "#94a3b8" },
-					},
-					x: {
-						grid: { display: false },
-						ticks: { color: "#94a3b8" },
-					},
-				},
-			},
-		});
-
-		// 4. Cost Chart
-		const costDates = Object.keys(analytics.costByDate).slice(-30);
-		const costs = costDates.map((d) => analytics.costByDate[d]);
-
-		new Chart(costCanvas, {
-			type: "line",
-			data: {
-				labels: costDates.map((d) =>
-					new Date(d).toLocaleDateString("en-US", {
-						month: "short",
-						day: "numeric",
-					}),
-				),
-				datasets: [
-					{
-						label: "Cost ($)",
-						data: costs,
-						borderColor: "#10b981",
-						backgroundColor: "rgba(16, 185, 129, 0.2)",
-						tension: 0.4,
-						fill: true,
-					},
-				],
-			},
-			options: {
-				responsive: true,
-				maintainAspectRatio: false,
-				plugins: {
-					legend: { display: false },
-				},
-				scales: {
-					y: {
-						grid: { color: "rgba(255,255,255,0.1)" },
-						ticks: {
-							color: "#94a3b8",
-							callback: (value) => "$" + value,
+					scales: {
+						y: {
+							grid: { color: "rgba(255,255,255,0.1)" },
+							ticks: { color: "#94a3b8" },
+						},
+						x: {
+							grid: { display: false },
+							ticks: { color: "#94a3b8" },
 						},
 					},
-					x: {
-						grid: { display: false },
-						ticks: { color: "#94a3b8" },
+				},
+			});
+		}
+
+		// 2. Material Pie Chart
+		if (pieCanvas) {
+			const materials = Object.keys(analytics.materialUsage);
+			const matWeights = materials.map((m) => analytics.materialUsage[m]);
+
+			pieChart = new Chart(pieCanvas, {
+				type: "doughnut",
+				data: {
+					labels: materials,
+					datasets: [
+						{
+							data: matWeights,
+							backgroundColor: chartColors,
+							borderWidth: 0,
+						},
+					],
+				},
+				options: {
+					responsive: true,
+					maintainAspectRatio: false,
+					plugins: {
+						legend: {
+							position: "right",
+							labels: { color: "#94a3b8" },
+						},
 					},
 				},
-			},
-		});
+			});
+		}
+
+		// 3. Electricity Usage Chart
+		if (electricityCanvas) {
+			const electricDates = Object.keys(
+				analytics.electricityByDate,
+			).slice(-30);
+			const electricityWh = electricDates.map(
+				(d) => analytics.electricityByDate[d] / 1000,
+			);
+
+			electricityChart = new Chart(electricityCanvas, {
+				type: "bar",
+				data: {
+					labels: electricDates.map((d) =>
+						new Date(d).toLocaleDateString("en-US", {
+							month: "short",
+							day: "numeric",
+						}),
+					),
+					datasets: [
+						{
+							label: "Electricity (kWh)",
+							data: electricityWh,
+							backgroundColor: "rgba(245, 158, 11, 0.6)",
+							borderColor: "#f59e0b",
+							borderWidth: 1,
+							borderRadius: 4,
+						},
+					],
+				},
+				options: {
+					responsive: true,
+					maintainAspectRatio: false,
+					plugins: {
+						legend: { display: false },
+					},
+					scales: {
+						y: {
+							grid: { color: "rgba(255,255,255,0.1)" },
+							ticks: { color: "#94a3b8" },
+							title: {
+								display: true,
+								text: "kWh",
+								color: "#94a3b8",
+							},
+						},
+						x: {
+							grid: { display: false },
+							ticks: { color: "#94a3b8" },
+						},
+					},
+				},
+			});
+		}
+
+		// 4. Cost Chart
+		if (costCanvas) {
+			const costDates = Object.keys(analytics.costByDate).slice(-30);
+			const costs = costDates.map((d) => analytics.costByDate[d]);
+
+			costChart = new Chart(costCanvas, {
+				type: "line",
+				data: {
+					labels: costDates.map((d) =>
+						new Date(d).toLocaleDateString("en-US", {
+							month: "short",
+							day: "numeric",
+						}),
+					),
+					datasets: [
+						{
+							label: "Cost ($)",
+							data: costs,
+							borderColor: "#10b981",
+							backgroundColor: "rgba(16, 185, 129, 0.2)",
+							tension: 0.4,
+							fill: true,
+						},
+					],
+				},
+				options: {
+					responsive: true,
+					maintainAspectRatio: false,
+					plugins: {
+						legend: { display: false },
+					},
+					scales: {
+						y: {
+							grid: { color: "rgba(255,255,255,0.1)" },
+							ticks: {
+								color: "#94a3b8",
+								callback: (value) => "$" + value,
+							},
+						},
+						x: {
+							grid: { display: false },
+							ticks: { color: "#94a3b8" },
+						},
+					},
+				},
+			});
+		}
 
 		// 5. Printer Usage Chart
-		if (analytics.printerStats.length > 0) {
-			new Chart(printerCanvas, {
+		if (printerCanvas && analytics.printerStats.length > 0) {
+			printerChart = new Chart(printerCanvas, {
 				type: "bar",
 				data: {
 					labels: analytics.printerStats.map(
@@ -620,9 +652,7 @@
 					<p class="text-2xl font-bold text-purple-400">
 						{formatBytes(analytics.totalModelSize)}
 					</p>
-					<p class="text-xs text-slate-400 uppercase">
-						Storage Used
-					</p>
+					<p class="text-xs text-slate-400 uppercase">Storage Used</p>
 				</div>
 			</div>
 			{#if analytics.topModels.length > 0}
