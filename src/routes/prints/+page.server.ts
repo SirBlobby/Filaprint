@@ -1,0 +1,203 @@
+import { PrintJob } from '$lib/models/PrintJob';
+import { Spool } from '$lib/models/Spool';
+import { Printer } from '$lib/models/Printer';
+import { connectDB } from '$lib/server/db';
+import type { PageServerLoad, Actions } from './$types';
+import { fail, redirect } from '@sveltejs/kit';
+
+export const load: PageServerLoad = async ({ locals }) => {
+    if (!locals.user) throw redirect(303, '/login');
+    
+    await connectDB();
+    
+    // Fetch prints with populated fields (Spool and Printer) - filtered by user
+    const prints = await PrintJob.find({ user_id: locals.user.id })
+        .populate('spool_id', 'brand material color_hex')
+        .populate('printer_id', 'name model')
+        .sort({ date: -1 })
+        .lean();
+
+    // Fetch active spools and printers for the "Log Print" form - filtered by user
+    const [spools, printers] = await Promise.all([
+        Spool.find({ user_id: locals.user.id, is_active: true }).lean(),
+        Printer.find({ user_id: locals.user.id }).lean()
+    ]);
+    
+    return {
+        prints: JSON.parse(JSON.stringify(prints)),
+        spools: JSON.parse(JSON.stringify(spools)),
+        printers: JSON.parse(JSON.stringify(printers))
+    };
+};
+
+export const actions: Actions = {
+    log: async ({ request, locals }) => {
+        if (!locals.user) return fail(401, { unauthorized: true });
+        
+        const formData = await request.formData();
+        const name = formData.get('name');
+        const spool_id = formData.get('spool_id');
+        const printer_id = formData.get('printer_id');
+        const duration_minutes = formData.get('duration_minutes');
+        const filament_used_g = formData.get('filament_used_g');
+        const status = formData.get('status');
+        const manual_cost = formData.get('manual_cost');
+        const elapsed_minutes = formData.get('elapsed_minutes');
+
+        if (!spool_id || !printer_id || !filament_used_g) {
+            return fail(400, { missing: true });
+        }
+
+        await connectDB();
+
+        try {
+            // 1. Get the spool to calculate cost and deduct weight
+            const spool = await Spool.findOne({ _id: spool_id, user_id: locals.user.id });
+            if (!spool) return fail(404, { spoolNotFound: true });
+
+            // Verify printer belongs to user
+            const printer = await Printer.findOne({ _id: printer_id, user_id: locals.user.id });
+            if (!printer) return fail(404, { printerNotFound: true });
+
+            const weightUsed = Number(filament_used_g);
+            
+            // Calculate Cost: use manual if provided, otherwise calculate
+            let costFilament: number;
+            if (manual_cost && String(manual_cost).trim() !== '') {
+                costFilament = Number(manual_cost);
+            } else {
+                costFilament = (spool.price / spool.weight_initial_g) * weightUsed;
+            }
+
+            // 2. Create Print Job
+            const isInProgress = status === 'In Progress';
+            
+            // Calculate started_at based on elapsed time
+            let startedAt: Date | null = null;
+            if (isInProgress) {
+                const elapsedMs = Number(elapsed_minutes || 0) * 60 * 1000;
+                startedAt = new Date(Date.now() - elapsedMs);
+            }
+            
+            await PrintJob.create({
+                user_id: locals.user.id,
+                name: name || 'Untitled Print',
+                spool_id,
+                printer_id,
+                duration_minutes: Number(duration_minutes),
+                filament_used_g: weightUsed,
+                calculated_cost_filament: Number(costFilament.toFixed(2)),
+                status,
+                started_at: startedAt,
+                date: new Date()
+            });
+
+            // 3. Deduct Filament from Spool (only if not In Progress)
+            if (!isInProgress) {
+                spool.weight_remaining_g = Math.max(0, spool.weight_remaining_g - weightUsed);
+                await spool.save();
+            }
+
+            return { success: true };
+        } catch (error) {
+            console.error(error);
+            return fail(500, { dbError: true });
+        }
+    },
+
+    edit: async ({ request, locals }) => {
+        if (!locals.user) return fail(401, { unauthorized: true });
+        
+        const formData = await request.formData();
+        const id = formData.get('id');
+        const name = formData.get('name');
+        const duration_minutes = formData.get('duration_minutes');
+        const filament_used_g = formData.get('filament_used_g');
+        const status = formData.get('status');
+        const manual_cost = formData.get('manual_cost');
+        const elapsed_minutes = formData.get('elapsed_minutes');
+        const printer_id = formData.get('printer_id');
+        const spool_id = formData.get('spool_id');
+
+        if (!id || !name) {
+            return fail(400, { missing: true });
+        }
+
+        await connectDB();
+
+        try {
+            const printJob = await PrintJob.findOne({ _id: id, user_id: locals.user.id }).populate('spool_id');
+            if (!printJob) return fail(404, { notFound: true });
+
+            const weightUsed = Number(filament_used_g);
+            
+            // Calculate Cost: use manual if provided, otherwise calculate
+            let costFilament: number;
+            if (manual_cost && String(manual_cost).trim() !== '') {
+                costFilament = Number(manual_cost);
+            } else if (printJob.spool_id?.price && printJob.spool_id?.weight_initial_g) {
+                costFilament = (printJob.spool_id.price / printJob.spool_id.weight_initial_g) * weightUsed;
+            } else {
+                costFilament = printJob.calculated_cost_filament || 0;
+            }
+
+            // Calculate started_at based on elapsed time for In Progress
+            const isInProgress = status === 'In Progress';
+            let startedAt = printJob.started_at;
+            
+            if (isInProgress && elapsed_minutes) {
+                const elapsedMs = Number(elapsed_minutes) * 60 * 1000;
+                startedAt = new Date(Date.now() - elapsedMs);
+            } else if (!isInProgress) {
+                startedAt = null;
+            }
+
+            // Build update object
+            const updateData: any = {
+                name,
+                duration_minutes: Number(duration_minutes),
+                filament_used_g: weightUsed,
+                calculated_cost_filament: Number(costFilament.toFixed(2)),
+                status,
+                started_at: startedAt
+            };
+
+            // Update printer/spool if provided (for In Progress)
+            if (printer_id) {
+                updateData.printer_id = printer_id;
+            }
+            if (spool_id) {
+                updateData.spool_id = spool_id;
+            }
+
+            await PrintJob.findOneAndUpdate(
+                { _id: id, user_id: locals.user.id },
+                updateData
+            );
+
+            return { success: true };
+        } catch (error) {
+            console.error(error);
+            return fail(500, { dbError: true });
+        }
+    },
+
+    delete: async ({ request, locals }) => {
+        if (!locals.user) return fail(401, { unauthorized: true });
+        
+        const formData = await request.formData();
+        const id = formData.get('id');
+
+        if (!id) return fail(400, { missing: true });
+
+        await connectDB();
+
+        try {
+            await PrintJob.findOneAndDelete({ _id: id, user_id: locals.user.id });
+            return { success: true };
+        } catch (error) {
+            console.error(error);
+            return fail(500, { dbError: true });
+        }
+    }
+};

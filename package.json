@@ -1,0 +1,43 @@
+{
+	"name": "filaprint",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"scripts": {
+		"dev": "vite dev --host",
+		"build": "vite build",
+		"start": "node server/server.js"
+	},
+	"devDependencies": {
+		"@sveltejs/adapter-auto": "^7.0.0",
+		"@sveltejs/kit": "^2.49.1",
+		"@sveltejs/vite-plugin-svelte": "^6.2.1",
+		"@tailwindcss/forms": "^0.5.10",
+		"@tailwindcss/typography": "^0.5.19",
+		"@tailwindcss/vite": "^4.1.17",
+		"@types/bcryptjs": "^3.0.0",
+		"@types/cookie": "^1.0.0",
+		"@types/jsonwebtoken": "^9.0.10",
+		"svelte": "^5.45.6",
+		"svelte-check": "^4.3.4",
+		"tailwindcss": "^4.1.17",
+		"typescript": "^5.9.3",
+		"vite": "^7.2.6"
+	},
+	"dependencies": {
+		"@iconify/svelte": "^5.1.0",
+		"@sveltejs/adapter-node": "^5.4.0",
+		"@threlte/core": "^8.3.1",
+		"@threlte/extras": "^9.7.1",
+		"@types/three": "^0.182.0",
+		"bcryptjs": "^3.0.3",
+		"chart.js": "^4.5.1",
+		"cookie": "^1.1.1",
+		"cors": "^2.8.5",
+		"dotenv": "^17.2.3",
+		"express": "^5.2.1",
+		"jsonwebtoken": "^9.0.3",
+		"mongoose": "^9.0.2",
+		"three": "^0.182.0"
+	}
+}
