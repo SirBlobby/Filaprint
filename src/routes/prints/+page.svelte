@@ -106,9 +106,10 @@
 							>
 							<span>•</span>
 							<span
-								>{new Date(
-									print.date,
-								).toLocaleDateString()}</span
+								>{new Date(print.date).toLocaleDateString(
+									"en-US",
+									{ timeZone: "UTC" },
+								)}</span
 							>
 						</div>
 					</div>
