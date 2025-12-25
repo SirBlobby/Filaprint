@@ -6,132 +6,155 @@
 */
 
 :root {
-  /* Spacing & Typography */
-  --spacing: 0.25rem;
-  --text-scaling: 1.067;
+	/* Spacing & Typography */
+	--spacing: 0.25rem;
+	--text-scaling: 1.067;
 
-  /* Font Family - JetBrains Mono */
-  --base-font-family: "JetBrains Mono", system-ui, sans-serif;
+	/* Font Family - JetBrains Mono */
+	--base-font-family: "JetBrains Mono", system-ui, sans-serif;
 
-  /* Primary Colors */
-  --color-primary-50: oklch(0.92 0.04 257.51);
-  --color-primary-100: oklch(0.84 0.08 254.62);
-  --color-primary-200: oklch(0.77 0.11 254.28);
-  --color-primary-300: oklch(0.7 0.15 254.36);
-  --color-primary-400: oklch(0.63 0.19 255.71);
-  --color-primary-500: oklch(0.57 0.21 258.29);
-  --color-primary-600: oklch(0.52 0.19 258.15);
-  --color-primary-700: oklch(0.46 0.17 257.78);
-  --color-primary-800: oklch(0.4 0.14 257.62);
-  --color-primary-900: oklch(0.34 0.11 257.14);
-  --color-primary-950: oklch(0.28 0.08 257.49);
+	/* Primary Colors */
+	--color-primary-50: oklch(0.92 0.04 257.51);
+	--color-primary-100: oklch(0.84 0.08 254.62);
+	--color-primary-200: oklch(0.77 0.11 254.28);
+	--color-primary-300: oklch(0.7 0.15 254.36);
+	--color-primary-400: oklch(0.63 0.19 255.71);
+	--color-primary-500: oklch(0.57 0.21 258.29);
+	--color-primary-600: oklch(0.52 0.19 258.15);
+	--color-primary-700: oklch(0.46 0.17 257.78);
+	--color-primary-800: oklch(0.4 0.14 257.62);
+	--color-primary-900: oklch(0.34 0.11 257.14);
+	--color-primary-950: oklch(0.28 0.08 257.49);
 
-  /* Secondary Colors */
-  --color-secondary-50: oklch(0.87 0.05 300.12);
-  --color-secondary-100: oklch(0.79 0.09 303.55);
-  --color-secondary-200: oklch(0.7 0.13 304.43);
-  --color-secondary-300: oklch(0.63 0.17 303.8);
-  --color-secondary-400: oklch(0.55 0.2 302.74);
-  --color-secondary-500: oklch(0.49 0.23 300.45);
-  --color-secondary-600: oklch(0.45 0.21 299.59);
-  --color-secondary-700: oklch(0.42 0.19 298.25);
-  --color-secondary-800: oklch(0.38 0.17 296.27);
-  --color-secondary-900: oklch(0.34 0.15 293.96);
-  --color-secondary-950: oklch(0.3 0.13 291.15);
+	/* Secondary Colors */
+	--color-secondary-50: oklch(0.87 0.05 300.12);
+	--color-secondary-100: oklch(0.79 0.09 303.55);
+	--color-secondary-200: oklch(0.7 0.13 304.43);
+	--color-secondary-300: oklch(0.63 0.17 303.8);
+	--color-secondary-400: oklch(0.55 0.2 302.74);
+	--color-secondary-500: oklch(0.49 0.23 300.45);
+	--color-secondary-600: oklch(0.45 0.21 299.59);
+	--color-secondary-700: oklch(0.42 0.19 298.25);
+	--color-secondary-800: oklch(0.38 0.17 296.27);
+	--color-secondary-900: oklch(0.34 0.15 293.96);
+	--color-secondary-950: oklch(0.3 0.13 291.15);
 
-  /* Tertiary Colors */
-  --color-tertiary-50: oklch(0.91 0.08 328.89);
-  --color-tertiary-100: oklch(0.83 0.13 339.66);
-  --color-tertiary-200: oklch(0.76 0.18 345.54);
-  --color-tertiary-300: oklch(0.7 0.23 350.67);
-  --color-tertiary-400: oklch(0.66 0.25 355.84);
-  --color-tertiary-500: oklch(0.65 0.26 2.47);
-  --color-tertiary-600: oklch(0.59 0.24 1.69);
-  --color-tertiary-700: oklch(0.54 0.22 0.5);
-  --color-tertiary-800: oklch(0.48 0.2 359.65);
-  --color-tertiary-900: oklch(0.43 0.17 357.7);
-  --color-tertiary-950: oklch(0.37 0.15 355.33);
+	/* Tertiary Colors */
+	--color-tertiary-50: oklch(0.91 0.08 328.89);
+	--color-tertiary-100: oklch(0.83 0.13 339.66);
+	--color-tertiary-200: oklch(0.76 0.18 345.54);
+	--color-tertiary-300: oklch(0.7 0.23 350.67);
+	--color-tertiary-400: oklch(0.66 0.25 355.84);
+	--color-tertiary-500: oklch(0.65 0.26 2.47);
+	--color-tertiary-600: oklch(0.59 0.24 1.69);
+	--color-tertiary-700: oklch(0.54 0.22 0.5);
+	--color-tertiary-800: oklch(0.48 0.2 359.65);
+	--color-tertiary-900: oklch(0.43 0.17 357.7);
+	--color-tertiary-950: oklch(0.37 0.15 355.33);
 
-  /* Success Colors */
-  --color-success-50: oklch(0.94 0.09 178.68);
-  --color-success-500: oklch(0.83 0.13 174.96);
-  --color-success-950: oklch(0.27 0.04 185.3);
+	/* Success Colors */
+	--color-success-50: oklch(0.94 0.09 178.68);
+	--color-success-500: oklch(0.83 0.13 174.96);
+	--color-success-950: oklch(0.27 0.04 185.3);
 
-  /* Warning Colors */
-  --color-warning-50: oklch(0.96 0.05 84.57);
-  --color-warning-500: oklch(0.82 0.14 76.72);
-  --color-warning-950: oklch(0.52 0.13 51.44);
+	/* Warning Colors */
+	--color-warning-50: oklch(0.96 0.05 84.57);
+	--color-warning-500: oklch(0.82 0.14 76.72);
+	--color-warning-950: oklch(0.52 0.13 51.44);
 
-  /* Error Colors */
-  --color-error-50: oklch(0.9 0.04 14);
-  --color-error-500: oklch(0.64 0.22 28.71);
-  --color-error-950: oklch(0.42 0.17 29.23);
+	/* Error Colors */
+	--color-error-50: oklch(0.9 0.04 14);
+	--color-error-500: oklch(0.64 0.22 28.71);
+	--color-error-950: oklch(0.42 0.17 29.23);
 
-  /* Surface Colors - Cerberus Exact */
-  --color-surface-50: oklch(0.99 0 0);
-  --color-surface-100: oklch(0.91 0 0);
-  --color-surface-200: oklch(0.81 0 0);
-  --color-surface-300: oklch(0.72 0 0);
-  --color-surface-400: oklch(0.62 0 0);
-  --color-surface-500: oklch(0.51 0 0);
-  --color-surface-600: oklch(0.45 0 0);
-  --color-surface-700: oklch(0.39 0 0);
-  --color-surface-800: oklch(0.32 0 0);
-  --color-surface-900: oklch(0.25 0 0);
-  --color-surface-950: oklch(0.18 0 0);
+	/* Surface Colors - Cerberus Exact */
+	--color-surface-50: oklch(0.99 0 0);
+	--color-surface-100: oklch(0.91 0 0);
+	--color-surface-200: oklch(0.81 0 0);
+	--color-surface-300: oklch(0.72 0 0);
+	--color-surface-400: oklch(0.62 0 0);
+	--color-surface-500: oklch(0.51 0 0);
+	--color-surface-600: oklch(0.45 0 0);
+	--color-surface-700: oklch(0.39 0 0);
+	--color-surface-800: oklch(0.32 0 0);
+	--color-surface-900: oklch(0.25 0 0);
+	--color-surface-950: oklch(0.18 0 0);
 
-  /* Semantic Colors */
-  --base-font-color: var(--color-surface-950);
-  --base-font-color-dark: var(--color-surface-50);
-  --body-background-color: var(--color-surface-50);
-  --body-background-color-dark: var(--color-surface-950);
+	/* Semantic Colors */
+	--base-font-color: var(--color-surface-950);
+	--base-font-color-dark: var(--color-surface-50);
+	--body-background-color: var(--color-surface-50);
+	--body-background-color-dark: var(--color-surface-950);
 }
 
 @font-face {
-  font-family: "JetBrains Mono";
-  src: url("/font/JetBrainsMono-Regular.ttf") format("truetype");
-  font-weight: normal;
-  font-style: normal;
+	font-family: "JetBrains Mono";
+	src: url("/font/JetBrainsMono-Regular.ttf") format("truetype");
+	font-weight: normal;
+	font-style: normal;
 }
 
 @theme {
-  --font-mono: "JetBrains Mono", monospace;
-  --font-display: "JetBrains Mono", monospace;
-  --font-body: "JetBrains Mono", monospace;
+	--font-mono: "JetBrains Mono", monospace;
+	--font-display: "JetBrains Mono", monospace;
+	--font-body: "JetBrains Mono", monospace;
 
-  /* Register Theme Colors for Tailwind */
-  --color-background: var(--body-background-color-dark);
-  --color-surface: var(--color-surface-900);
+	/* Register Theme Colors for Tailwind */
+	--color-background: var(--body-background-color-dark);
+	--color-surface: var(--color-surface-900);
 
-  --color-primary: var(--color-primary-500);
-  --color-secondary: var(--color-secondary-500);
-  --color-accent: var(--color-tertiary-500);
+	--color-primary: var(--color-primary-500);
+	--color-secondary: var(--color-secondary-500);
+	--color-accent: var(--color-tertiary-500);
 
-  --color-success: var(--color-success-500);
-  --color-warning: var(--color-warning-500);
-  --color-danger: var(--color-error-500);
+	--color-success: var(--color-success-500);
+	--color-warning: var(--color-warning-500);
+	--color-danger: var(--color-error-500);
 
-  --color-text-main: var(--base-font-color-dark);
-  --color-text-muted: var(--color-surface-400);
+	--color-text-main: var(--base-font-color-dark);
+	--color-text-muted: var(--color-surface-400);
 }
 
 body {
-  background-color: var(--body-background-color-dark);
-  color: var(--base-font-color-dark);
-  font-family: var(--base-font-family);
-  @apply antialiased min-h-screen selection:bg-primary selection:text-white;
+	background-color: var(--body-background-color-dark);
+	color: var(--base-font-color-dark);
+	font-family: var(--base-font-family);
+	@apply antialiased min-h-screen selection:bg-primary selection:text-white;
 }
 
 /* Card Utilities */
 .glass-card {
-  background-color: var(--color-surface-900);
-  border: 1px solid var(--color-surface-700);
-  @apply rounded-xl shadow-lg transition-all duration-300;
+	background-color: var(--color-surface-900);
+	border: 1px solid var(--color-surface-700);
+	@apply rounded-xl shadow-lg transition-all duration-300;
 }
 
 .glass-card:hover {
-  background-color: var(--color-surface-800);
-  border-color: var(--color-primary-500);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+	background-color: var(--color-surface-800);
+	border-color: var(--color-primary-500);
+	transform: translateY(-2px);
+	box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+/* Date Input Dark Theme Styling */
+input[type="date"] {
+	color-scheme: dark;
+	appearance: none;
+	-webkit-appearance: none;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+	filter: invert(0.7);
+	cursor: pointer;
+	opacity: 0.6;
+	transition: opacity 0.2s;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+	opacity: 1;
+}
+
+/* Firefox date input styling */
+input[type="date"]::-moz-calendar-picker-indicator {
+	filter: invert(0.7);
 }

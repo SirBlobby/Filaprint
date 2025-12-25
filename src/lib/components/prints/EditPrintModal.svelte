@@ -47,6 +47,22 @@
 		window.location.reload();
 	}
 
+	async function handleDuplicate() {
+		if (
+			!confirm(
+				"Create a duplicate print log? This will deduct filament from your spool.",
+			)
+		)
+			return;
+		isSubmitting = true;
+		const formData = new FormData();
+		formData.append("id", print._id);
+		await fetch("?/duplicate", { method: "POST", body: formData });
+		isSubmitting = false;
+		handleClose();
+		window.location.reload();
+	}
+
 	// STL Upload
 	let stlFile = $state<File | null>(null);
 	let uploadProgress = $state(0);
@@ -221,6 +237,28 @@
 			</div>
 
 			<Input label="Print Name" name="name" value={print.name} required />
+
+			<!-- Date Field -->
+			<div class="space-y-2">
+				<!-- svelte-ignore a11y_label_has_associated_control -->
+				<label
+					class="block text-xs font-medium text-slate-400 uppercase tracking-wider"
+				>
+					Date
+				</label>
+				<div class="relative">
+					<Icon
+						icon="mdi:calendar"
+						class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 pointer-events-none"
+					/>
+					<input
+						type="date"
+						name="date"
+						value={new Date(print.date).toISOString().split("T")[0]}
+						class="w-full rounded-lg bg-slate-800/50 border border-slate-700 pl-10 pr-4 py-2.5 text-sm text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30 transition-all"
+					/>
+				</div>
+			</div>
 
 			<!-- STL Viewer/Upload -->
 			<div class="space-y-2">
@@ -494,6 +532,51 @@
 			{:else}
 				<!-- Completed print fields -->
 				<div class="space-y-4">
+					<!-- Printer and Spool Selection -->
+					<div class="grid grid-cols-2 gap-4">
+						<div class="space-y-2">
+							<!-- svelte-ignore a11y_label_has_associated_control -->
+							<label
+								class="block text-xs font-medium text-slate-400 uppercase tracking-wider"
+								>Printer</label
+							>
+							<select
+								name="printer_id"
+								class="w-full rounded-lg bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm text-slate-100 focus:border-blue-500 focus:outline-none"
+							>
+								{#each printers as p}
+									<option
+										value={p._id}
+										selected={print.printer_id?._id ===
+											p._id || print.printer_id === p._id}
+										>{p.name}</option
+									>
+								{/each}
+							</select>
+						</div>
+						<div class="space-y-2">
+							<!-- svelte-ignore a11y_label_has_associated_control -->
+							<label
+								class="block text-xs font-medium text-slate-400 uppercase tracking-wider"
+								>Spool</label
+							>
+							<select
+								name="spool_id"
+								class="w-full rounded-lg bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm text-slate-100 focus:border-blue-500 focus:outline-none"
+							>
+								{#each spools as s}
+									<option
+										value={s._id}
+										selected={print.spool_id?._id ===
+											s._id || print.spool_id === s._id}
+										>{s.brand}
+										{s.material} ({s.weight_remaining_g}g
+										left)</option
+									>
+								{/each}
+							</select>
+						</div>
+					</div>
 					<div class="space-y-2">
 						<!-- svelte-ignore a11y_label_has_associated_control -->
 						<label
@@ -550,22 +633,29 @@
 			{/if}
 
 			<div class="pt-4 flex justify-between">
-				<Button
-					variant="destructive"
-					type="button"
-					disabled={isSubmitting}
-					onclick={handleDelete}
-				>
-					Delete
-				</Button>
-				<div class="flex gap-3">
-					<Button variant="ghost" onclick={handleClose} type="button"
-						>Cancel</Button
+				<div class="flex gap-2">
+					<Button
+						variant="destructive"
+						type="button"
+						disabled={isSubmitting}
+						onclick={handleDelete}
 					>
-					<Button type="submit" disabled={isSubmitting}>
-						{isSubmitting ? "Saving..." : "Save Changes"}
+						<Icon icon="mdi:delete" class="w-4 h-4 mr-1" />
+						Delete
+					</Button>
+					<Button
+						variant="ghost"
+						type="button"
+						disabled={isSubmitting}
+						onclick={handleDuplicate}
+					>
+						<Icon icon="mdi:content-copy" class="w-4 h-4 mr-1" />
+						Duplicate
 					</Button>
 				</div>
+				<Button type="submit" disabled={isSubmitting}>
+					{isSubmitting ? "Saving..." : "Save Changes"}
+				</Button>
 			</div>
 		</form>
 	{/if}

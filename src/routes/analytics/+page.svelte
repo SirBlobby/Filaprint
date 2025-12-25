@@ -1,18 +1,64 @@
 <script lang="ts">
 	import { onMount } from "svelte";
+	import { goto } from "$app/navigation";
 	import Chart from "chart.js/auto";
 	import Card from "$lib/components/ui/Card.svelte";
+	import Button from "$lib/components/ui/Button.svelte";
 	import Icon from "@iconify/svelte";
 
 	let { data } = $props();
-	// svelte-ignore non_reactive_update
 	let analytics = $derived(data.analytics);
 
 	let timelineCanvas: HTMLCanvasElement;
 	let pieCanvas: HTMLCanvasElement;
 	let electricityCanvas: HTMLCanvasElement;
+	let costCanvas: HTMLCanvasElement;
+	let printerCanvas: HTMLCanvasElement;
+
+	// Time range options
+	const ranges = [
+		{ value: "7", label: "7 Days" },
+		{ value: "30", label: "30 Days" },
+		{ value: "90", label: "90 Days" },
+		{ value: "365", label: "1 Year" },
+		{ value: "all", label: "All Time" },
+	];
+	let selectedRange = $state(analytics.range);
+
+	function changeRange(range: string) {
+		selectedRange = range;
+		goto(`/analytics?range=${range}`);
+	}
+
+	// Format minutes to hours:minutes
+	function formatTime(minutes: number): string {
+		const hours = Math.floor(minutes / 60);
+		const mins = minutes % 60;
+		if (hours > 0) {
+			return `${hours}h ${mins}m`;
+		}
+		return `${mins}m`;
+	}
+
+	// Format bytes to human readable
+	function formatBytes(bytes: number): string {
+		if (bytes === 0) return "0 B";
+		const k = 1024;
+		const sizes = ["B", "KB", "MB", "GB"];
+		const i = Math.floor(Math.log(bytes) / Math.log(k));
+		return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+	}
 
 	onMount(() => {
+		const chartColors = [
+			"#3b82f6",
+			"#8b5cf6",
+			"#10b981",
+			"#f59e0b",
+			"#ef4444",
+			"#64748b",
+		];
+
 		// 1. Timeline Chart - Filament Usage
 		const dates = Object.keys(analytics.usageByDate).slice(-30);
 		const weights = dates.map((d) => analytics.usageByDate[d]);
@@ -20,7 +66,12 @@
 		new Chart(timelineCanvas, {
 			type: "line",
 			data: {
-				labels: dates,
+				labels: dates.map((d) =>
+					new Date(d).toLocaleDateString("en-US", {
+						month: "short",
+						day: "numeric",
+					}),
+				),
 				datasets: [
 					{
 						label: "Filament Usage (g)",
@@ -39,8 +90,14 @@
 					legend: { display: false },
 				},
 				scales: {
-					y: { grid: { color: "rgba(255,255,255,0.1)" } },
-					x: { grid: { display: false } },
+					y: {
+						grid: { color: "rgba(255,255,255,0.1)" },
+						ticks: { color: "#94a3b8" },
+					},
+					x: {
+						grid: { display: false },
+						ticks: { color: "#94a3b8" },
+					},
 				},
 			},
 		});
@@ -48,14 +105,6 @@
 		// 2. Material Pie Chart
 		const materials = Object.keys(analytics.materialUsage);
 		const matWeights = materials.map((m) => analytics.materialUsage[m]);
-		const chartColors = [
-			"#3b82f6",
-			"#8b5cf6",
-			"#10b981",
-			"#f59e0b",
-			"#ef4444",
-			"#64748b",
-		];
 
 		new Chart(pieCanvas, {
 			type: "doughnut",
@@ -84,12 +133,17 @@
 		);
 		const electricityWh = electricDates.map(
 			(d) => analytics.electricityByDate[d] / 1000,
-		); // Convert to kWh
+		);
 
 		new Chart(electricityCanvas, {
 			type: "bar",
 			data: {
-				labels: electricDates,
+				labels: electricDates.map((d) =>
+					new Date(d).toLocaleDateString("en-US", {
+						month: "short",
+						day: "numeric",
+					}),
+				),
 				datasets: [
 					{
 						label: "Electricity (kWh)",
@@ -110,39 +164,189 @@
 				scales: {
 					y: {
 						grid: { color: "rgba(255,255,255,0.1)" },
+						ticks: { color: "#94a3b8" },
 						title: { display: true, text: "kWh", color: "#94a3b8" },
 					},
-					x: { grid: { display: false } },
+					x: {
+						grid: { display: false },
+						ticks: { color: "#94a3b8" },
+					},
 				},
 			},
 		});
+
+		// 4. Cost Chart
+		const costDates = Object.keys(analytics.costByDate).slice(-30);
+		const costs = costDates.map((d) => analytics.costByDate[d]);
+
+		new Chart(costCanvas, {
+			type: "line",
+			data: {
+				labels: costDates.map((d) =>
+					new Date(d).toLocaleDateString("en-US", {
+						month: "short",
+						day: "numeric",
+					}),
+				),
+				datasets: [
+					{
+						label: "Cost ($)",
+						data: costs,
+						borderColor: "#10b981",
+						backgroundColor: "rgba(16, 185, 129, 0.2)",
+						tension: 0.4,
+						fill: true,
+					},
+				],
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: {
+					legend: { display: false },
+				},
+				scales: {
+					y: {
+						grid: { color: "rgba(255,255,255,0.1)" },
+						ticks: {
+							color: "#94a3b8",
+							callback: (value) => "$" + value,
+						},
+					},
+					x: {
+						grid: { display: false },
+						ticks: { color: "#94a3b8" },
+					},
+				},
+			},
+		});
+
+		// 5. Printer Usage Chart
+		if (analytics.printerStats.length > 0) {
+			new Chart(printerCanvas, {
+				type: "bar",
+				data: {
+					labels: analytics.printerStats.map(
+						(p: { name: string }) => p.name,
+					),
+					datasets: [
+						{
+							label: "Prints",
+							data: analytics.printerStats.map(
+								(p: { count: number }) => p.count,
+							),
+							backgroundColor: chartColors,
+							borderRadius: 6,
+						},
+					],
+				},
+				options: {
+					responsive: true,
+					maintainAspectRatio: false,
+					indexAxis: "y",
+					plugins: {
+						legend: { display: false },
+					},
+					scales: {
+						y: {
+							grid: { display: false },
+							ticks: { color: "#94a3b8" },
+						},
+						x: {
+							grid: { color: "rgba(255,255,255,0.1)" },
+							ticks: { color: "#94a3b8" },
+						},
+					},
+				},
+			});
+		}
 	});
 
+	// Derived values
 	let totalPrints = $derived(
-		analytics.successRate.success + analytics.successRate.fail,
+		analytics.successRate.success +
+			analytics.successRate.fail +
+			analytics.successRate.cancelled,
 	);
 	let successRate = $derived(
 		totalPrints > 0
 			? Math.round((analytics.successRate.success / totalPrints) * 100)
 			: 0,
 	);
+
+	// Export to CSV
+	function exportToCSV() {
+		const headers = [
+			"Date",
+			"Filament (g)",
+			"Electricity (kWh)",
+			"Cost ($)",
+		];
+		const dates = Object.keys(analytics.usageByDate);
+		const rows = dates.map((d) => [
+			d,
+			analytics.usageByDate[d] || 0,
+			((analytics.electricityByDate[d] || 0) / 1000).toFixed(3),
+			(analytics.costByDate[d] || 0).toFixed(2),
+		]);
+
+		const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join(
+			"\n",
+		);
+		const blob = new Blob([csv], { type: "text/csv" });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = `filaprint-analytics-${new Date().toISOString().split("T")[0]}.csv`;
+		a.click();
+		URL.revokeObjectURL(url);
+	}
 </script>
 
 <div class="space-y-6 fade-in">
-	<div>
-		<h1 class="text-3xl font-bold text-white">Analytics</h1>
-		<p class="text-slate-400 mt-1">Insights into your printing habits</p>
+	<div
+		class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+	>
+		<div>
+			<h1 class="text-3xl font-bold text-white">Analytics</h1>
+			<p class="text-slate-400 mt-1">
+				Insights into your printing habits
+			</p>
+		</div>
+		<div class="flex items-center gap-3">
+			<!-- Time Range Selector -->
+			<div class="flex bg-slate-800/50 rounded-lg p-1">
+				{#each ranges as range}
+					<button
+						class="px-3 py-1.5 text-xs font-medium rounded-md transition-all {selectedRange ===
+						range.value
+							? 'bg-blue-500 text-white'
+							: 'text-slate-400 hover:text-white'}"
+						onclick={() => changeRange(range.value)}
+					>
+						{range.label}
+					</button>
+				{/each}
+			</div>
+			<!-- Export Button -->
+			<Button variant="ghost" onclick={exportToCSV}>
+				<Icon icon="mdi:download" class="w-4 h-4 mr-1" />
+				Export
+			</Button>
+		</div>
 	</div>
 
-	<!-- Stats Row -->
-	<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+	<!-- Main Stats Row -->
+	<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
 		<Card class="text-center">
 			<p
 				class="text-xs font-medium text-slate-400 uppercase tracking-wider"
 			>
 				Total Prints
 			</p>
-			<p class="text-3xl font-bold text-white mt-1">{totalPrints}</p>
+			<p class="text-2xl font-bold text-white mt-1">
+				{analytics.totalPrints}
+			</p>
 		</Card>
 		<Card class="text-center">
 			<p
@@ -150,7 +354,7 @@
 			>
 				Success Rate
 			</p>
-			<p class="text-3xl font-bold text-emerald-400 mt-1">
+			<p class="text-2xl font-bold text-emerald-400 mt-1">
 				{successRate}%
 			</p>
 		</Card>
@@ -158,9 +362,31 @@
 			<p
 				class="text-xs font-medium text-slate-400 uppercase tracking-wider"
 			>
-				Electricity Used
+				Total Spent
 			</p>
-			<p class="text-3xl font-bold text-amber-400 mt-1">
+			<p class="text-2xl font-bold text-green-400 mt-1">
+				${analytics.totalCost}
+			</p>
+		</Card>
+		<Card class="text-center">
+			<p
+				class="text-xs font-medium text-slate-400 uppercase tracking-wider"
+			>
+				Filament Used
+			</p>
+			<p class="text-2xl font-bold text-blue-400 mt-1">
+				{analytics.totalFilamentUsed}<span
+					class="text-sm font-normal text-slate-500 ml-1">g</span
+				>
+			</p>
+		</Card>
+		<Card class="text-center">
+			<p
+				class="text-xs font-medium text-slate-400 uppercase tracking-wider"
+			>
+				Electricity
+			</p>
+			<p class="text-2xl font-bold text-amber-400 mt-1">
 				{analytics.totalElectricity}<span
 					class="text-sm font-normal text-slate-500 ml-1">kWh</span
 				>
@@ -170,37 +396,118 @@
 			<p
 				class="text-xs font-medium text-slate-400 uppercase tracking-wider"
 			>
-				Materials
+				Print Time
 			</p>
-			<p class="text-3xl font-bold text-violet-400 mt-1">
-				{Object.keys(analytics.materialUsage).length}
+			<p class="text-2xl font-bold text-violet-400 mt-1">
+				{formatTime(analytics.totalPrintTime)}
 			</p>
 		</Card>
 	</div>
 
-	<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+	<!-- Averages Row -->
+	<div class="grid grid-cols-3 gap-4">
+		<Card class="flex items-center gap-4">
+			<div class="p-3 rounded-lg bg-blue-500/10">
+				<Icon icon="mdi:timer-outline" class="w-8 h-8 text-blue-400" />
+			</div>
+			<div>
+				<p class="text-xs text-slate-400 uppercase">Avg Print Time</p>
+				<p class="text-xl font-bold text-white">
+					{formatTime(analytics.avgPrintTime)}
+				</p>
+			</div>
+		</Card>
+		<Card class="flex items-center gap-4">
+			<div class="p-3 rounded-lg bg-green-500/10">
+				<Icon icon="mdi:currency-usd" class="w-8 h-8 text-green-400" />
+			</div>
+			<div>
+				<p class="text-xs text-slate-400 uppercase">Avg Cost/Print</p>
+				<p class="text-xl font-bold text-white">${analytics.avgCost}</p>
+			</div>
+		</Card>
+		<Card class="flex items-center gap-4">
+			<div class="p-3 rounded-lg bg-violet-500/10">
+				<Icon icon="mdi:scale" class="w-8 h-8 text-violet-400" />
+			</div>
+			<div>
+				<p class="text-xs text-slate-400 uppercase">
+					Avg Filament/Print
+				</p>
+				<p class="text-xl font-bold text-white">
+					{analytics.avgFilament}g
+				</p>
+			</div>
+		</Card>
+	</div>
+
+	<!-- Cost Breakdown -->
+	<Card>
+		<div class="flex items-center justify-between mb-4">
+			<div class="flex items-center gap-2">
+				<Icon icon="mdi:wallet" class="w-5 h-5 text-green-400" />
+				<h3 class="text-lg font-semibold text-white">Cost Breakdown</h3>
+			</div>
+		</div>
+		<div class="grid grid-cols-3 gap-4">
+			<div class="p-4 rounded-lg bg-slate-800/50 text-center">
+				<p class="text-xs text-slate-400 uppercase mb-1">
+					Filament Cost
+				</p>
+				<p class="text-2xl font-bold text-blue-400">
+					${analytics.totalFilamentCost}
+				</p>
+			</div>
+			<div class="p-4 rounded-lg bg-slate-800/50 text-center">
+				<p class="text-xs text-slate-400 uppercase mb-1">Energy Cost</p>
+				<p class="text-2xl font-bold text-amber-400">
+					${analytics.totalEnergyCost}
+				</p>
+			</div>
+			<div class="p-4 rounded-lg bg-slate-800/50 text-center">
+				<p class="text-xs text-slate-400 uppercase mb-1">Total Cost</p>
+				<p class="text-2xl font-bold text-green-400">
+					${analytics.totalCost}
+				</p>
+			</div>
+		</div>
+	</Card>
+
+	<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 		<!-- Usage Timeline -->
-		<Card class="col-span-1 md:col-span-2 min-h-[350px]">
+		<Card class="min-h-[350px]">
 			<div class="flex items-center gap-2 mb-4">
-				<Icon icon="mdi:scale" class="w-5 h-5 text-blue-400" />
-				<h3 class="text-lg font-semibold text-white">
-					Daily Filament Usage (g)
-				</h3>
+				<Icon icon="mdi:chart-line" class="w-5 h-5 text-blue-400" />
+				<h3 class="text-lg font-semibold text-white">Filament Usage</h3>
 			</div>
 			<div class="h-[280px]">
 				<canvas bind:this={timelineCanvas}></canvas>
 			</div>
 		</Card>
 
+		<!-- Cost Timeline -->
+		<Card class="min-h-[350px]">
+			<div class="flex items-center gap-2 mb-4">
+				<Icon
+					icon="mdi:chart-areaspline"
+					class="w-5 h-5 text-green-400"
+				/>
+				<h3 class="text-lg font-semibold text-white">Cost Over Time</h3>
+			</div>
+			<div class="h-[280px]">
+				<canvas bind:this={costCanvas}></canvas>
+			</div>
+		</Card>
+
 		<!-- Electricity Usage Chart -->
-		<Card class="col-span-1 md:col-span-2 min-h-[350px]">
+		<Card class="min-h-[350px]">
 			<div class="flex items-center gap-2 mb-4">
 				<Icon
 					icon="mdi:lightning-bolt"
 					class="w-5 h-5 text-amber-400"
 				/>
 				<h3 class="text-lg font-semibold text-white">
-					Daily Electricity Usage (kWh)
+					Electricity Usage
 				</h3>
 			</div>
 			<div class="h-[280px]">
@@ -208,7 +515,22 @@
 			</div>
 		</Card>
 
-		<!-- Success Rate Stat -->
+		<!-- Material Distribution -->
+		<Card class="min-h-[350px]">
+			<div class="flex items-center gap-2 mb-4">
+				<Icon icon="mdi:chart-pie" class="w-5 h-5 text-violet-400" />
+				<h3 class="text-lg font-semibold text-white">
+					Material Distribution
+				</h3>
+			</div>
+			<div class="h-[280px]">
+				<canvas bind:this={pieCanvas}></canvas>
+			</div>
+		</Card>
+	</div>
+
+	<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+		<!-- Success Rate Ring -->
 		<Card class="flex flex-col items-center justify-center py-8">
 			<div class="relative w-32 h-32">
 				<svg class="w-full h-full transform -rotate-90">
@@ -244,23 +566,86 @@
 					>
 				</div>
 			</div>
-			<p class="text-slate-400 mt-4 text-sm">
-				{analytics.successRate.success} Success / {analytics.successRate
-					.fail} Fail
-			</p>
+			<div class="flex items-center gap-4 mt-4 text-sm">
+				<span class="flex items-center gap-1 text-emerald-400">
+					<Icon icon="mdi:check-circle" class="w-4 h-4" />
+					{analytics.successRate.success}
+				</span>
+				<span class="flex items-center gap-1 text-red-400">
+					<Icon icon="mdi:close-circle" class="w-4 h-4" />
+					{analytics.successRate.fail}
+				</span>
+				<span class="flex items-center gap-1 text-slate-400">
+					<Icon icon="mdi:cancel" class="w-4 h-4" />
+					{analytics.successRate.cancelled}
+				</span>
+			</div>
 		</Card>
 
-		<!-- Material Usage Pie -->
+		<!-- Printer Usage -->
+		<Card class="min-h-[280px]">
+			<div class="flex items-center gap-2 mb-4">
+				<Icon icon="mdi:printer-3d" class="w-5 h-5 text-blue-400" />
+				<h3 class="text-lg font-semibold text-white">Printer Usage</h3>
+			</div>
+			{#if analytics.printerStats.length > 0}
+				<div class="h-[200px]">
+					<canvas bind:this={printerCanvas}></canvas>
+				</div>
+			{:else}
+				<div
+					class="flex items-center justify-center h-[200px] text-slate-500"
+				>
+					No printer data available
+				</div>
+			{/if}
+		</Card>
+
+		<!-- 3D Models Stats -->
 		<Card>
 			<div class="flex items-center gap-2 mb-4">
-				<Icon icon="mdi:chart-pie" class="w-5 h-5 text-violet-400" />
-				<h3 class="text-lg font-semibold text-white">
-					Material Distribution
-				</h3>
+				<Icon icon="mdi:cube-scan" class="w-5 h-5 text-violet-400" />
+				<h3 class="text-lg font-semibold text-white">3D Models</h3>
 			</div>
-			<div class="h-[250px]">
-				<canvas bind:this={pieCanvas}></canvas>
+			<div class="grid grid-cols-2 gap-4 mb-4">
+				<div class="text-center p-3 bg-slate-800/50 rounded-lg">
+					<p class="text-2xl font-bold text-violet-400">
+						{analytics.printsWithModels}
+					</p>
+					<p class="text-xs text-slate-400 uppercase">
+						Prints with Models
+					</p>
+				</div>
+				<div class="text-center p-3 bg-slate-800/50 rounded-lg">
+					<p class="text-2xl font-bold text-purple-400">
+						{formatBytes(analytics.totalModelSize)}
+					</p>
+					<p class="text-xs text-slate-400 uppercase">
+						Storage Used
+					</p>
+				</div>
 			</div>
+			{#if analytics.topModels.length > 0}
+				<div class="space-y-2">
+					<p class="text-xs text-slate-400 uppercase mb-2">
+						Most Printed
+					</p>
+					{#each analytics.topModels as model}
+						<div
+							class="flex items-center justify-between text-sm py-1"
+						>
+							<span class="text-slate-300 truncate max-w-[150px]"
+								>{model.name}</span
+							>
+							<span class="text-slate-500">{model.count}x</span>
+						</div>
+					{/each}
+				</div>
+			{:else}
+				<p class="text-sm text-slate-500 text-center">
+					No models uploaded yet
+				</p>
+			{/if}
 		</Card>
 	</div>
 </div>

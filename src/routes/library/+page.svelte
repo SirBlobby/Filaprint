@@ -5,6 +5,7 @@
 
 	let { data } = $props();
 	let models = $derived(data.models);
+	let totalStorage = $derived(data.totalStorage);
 
 	let selectedModel = $state<any>(null);
 	let showViewer = $state(false);
@@ -26,14 +27,34 @@
 			year: "numeric",
 		});
 	}
+
+	function formatBytes(bytes: number): string {
+		if (bytes === 0) return "0 B";
+		const k = 1024;
+		const sizes = ["B", "KB", "MB", "GB"];
+		const i = Math.floor(Math.log(bytes) / Math.log(k));
+		return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+	}
 </script>
 
 <div class="space-y-6 fade-in">
-	<div>
-		<h1 class="text-3xl font-bold text-white">Model Library</h1>
-		<p class="text-slate-400 mt-1">
-			Browse your 3D model collection ({models.length} models)
-		</p>
+	<div
+		class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+	>
+		<div>
+			<h1 class="text-3xl font-bold text-white">Model Library</h1>
+			<p class="text-slate-400 mt-1">
+				Browse your 3D model collection ({models.length} models)
+			</p>
+		</div>
+		<div
+			class="flex items-center gap-2 px-4 py-2 bg-slate-800/50 rounded-lg"
+		>
+			<Icon icon="mdi:harddisk" class="w-5 h-5 text-violet-400" />
+			<span class="text-sm text-slate-300"
+				>{formatBytes(totalStorage)} used</span
+			>
+		</div>
 	</div>
 
 	{#if models.length === 0}
@@ -129,6 +150,13 @@
 										Failed
 									</span>
 								{/if}
+								<!-- File size -->
+								<span
+									class="flex items-center gap-1 text-slate-500 ml-auto"
+								>
+									<Icon icon="mdi:file" class="w-3.5 h-3.5" />
+									{formatBytes(model.fileSize)}
+								</span>
 							</div>
 						</div>
 					</Card>
@@ -203,6 +231,12 @@
 				<div class="text-slate-400">
 					<span class="text-slate-500">Cost:</span>
 					${selectedModel.calculated_cost_filament.toFixed(2)}
+				</div>
+			{/if}
+			{#if selectedModel.fileSize}
+				<div class="text-slate-400">
+					<span class="text-slate-500">File Size:</span>
+					{formatBytes(selectedModel.fileSize)}
 				</div>
 			{/if}
 		</div>

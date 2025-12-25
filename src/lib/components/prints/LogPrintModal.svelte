@@ -192,6 +192,28 @@
 			required
 		/>
 
+		<!-- Date Field -->
+		<div class="space-y-2">
+			<!-- svelte-ignore a11y_label_has_associated_control -->
+			<label
+				class="block text-xs font-medium text-slate-400 uppercase tracking-wider"
+			>
+				Date
+			</label>
+			<div class="relative">
+				<Icon
+					icon="mdi:calendar"
+					class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 pointer-events-none"
+				/>
+				<input
+					type="date"
+					name="date"
+					value={new Date().toISOString().split("T")[0]}
+					class="w-full rounded-lg bg-slate-800/50 border border-slate-700 pl-10 pr-4 py-2.5 text-sm text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30 transition-all"
+				/>
+			</div>
+		</div>
+
 		<!-- 3D Model Upload -->
 		<div class="space-y-2">
 			<!-- svelte-ignore a11y_label_has_associated_control -->
@@ -457,10 +479,7 @@
 			</div>
 		{/if}
 
-		<div class="pt-4 flex justify-end gap-3">
-			<Button variant="ghost" onclick={handleClose} type="button"
-				>Cancel</Button
-			>
+		<div class="pt-4 flex justify-end">
 			<Button type="submit" disabled={isSubmitting}>
 				{isSubmitting
 					? "Saving..."
