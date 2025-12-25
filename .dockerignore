@@ -1,0 +1,30 @@
+# Filaprint - Development and build files
+node_modules
+.git
+.gitignore
+*.md
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test files
+__tests__
+*.test.ts
+*.spec.ts
+
+# Build cache
+.svelte-kit
+.turbo

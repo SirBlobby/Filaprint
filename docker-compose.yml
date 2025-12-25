@@ -1,0 +1,41 @@
+services:
+    filaprint:
+        build: .
+        container_name: filaprint
+        restart: unless-stopped
+        ports:
+            - "3000:3000"
+        environment:
+            - NODE_ENV=production
+            - MONGODB_URI=${MONGODB_URI}
+            - JWT_SECRET=${JWT_SECRET}
+            - ORIGIN=${ORIGIN:-http://localhost:3000}
+        volumes:
+            # Persist uploaded 3D models
+            - ./data/uploads:/app/static/uploads
+        depends_on:
+            - mongodb
+        networks:
+            - filaprint-network
+
+    mongodb:
+        image: mongo:7
+        container_name: filaprint-mongo
+        restart: unless-stopped
+        environment:
+            - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER:-admin}
+            - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD:-changeme}
+        volumes:
+            - mongodb_data:/data/db
+        networks:
+            - filaprint-network
+        # Uncomment to expose MongoDB port for debugging
+        # ports:
+        #   - "27017:27017"
+
+networks:
+    filaprint-network:
+        driver: bridge
+
+volumes:
+    mongodb_data:
