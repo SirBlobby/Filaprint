@@ -3,6 +3,7 @@
 	import * as THREE from "three";
 	import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 	import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
+	import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 	import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 	interface Props {
@@ -95,6 +96,8 @@
 
 		if (extension === "obj") {
 			loadOBJ();
+		} else if (extension === "gltf" || extension === "glb") {
+			loadGLTF();
 		} else {
 			loadSTL();
 		}
@@ -157,6 +160,56 @@
 			undefined,
 			(err) => {
 				console.error("Error loading OBJ:", err);
+			},
+		);
+	}
+
+	function loadGLTF() {
+		const loader = new GLTFLoader();
+
+		loader.load(
+			modelPath,
+			(gltf) => {
+				const model = gltf.scene;
+
+				// Center the object
+				const box = new THREE.Box3().setFromObject(model);
+				const center = box.getCenter(new THREE.Vector3());
+				model.position.sub(center);
+
+				// Scale to fit
+				const size = box.getSize(new THREE.Vector3());
+				const maxDim = Math.max(size.x, size.y, size.z);
+				const scale = 50 / maxDim;
+				model.scale.set(scale, scale, scale);
+
+				// glTF models may have their own materials, apply default if missing
+				model.traverse((child) => {
+					if (child instanceof THREE.Mesh) {
+						if (
+							!child.material ||
+							(child.material as THREE.Material).type ===
+								"MeshBasicMaterial"
+						) {
+							child.material = new THREE.MeshPhongMaterial({
+								color: 0x3b82f6,
+								specular: 0x111111,
+								shininess: 50,
+							});
+						}
+					}
+				});
+
+				scene.add(model);
+
+				// Position camera
+				const distance = maxDim * scale * 2.5;
+				camera.position.set(distance, distance, distance);
+				controls.update();
+			},
+			undefined,
+			(err) => {
+				console.error("Error loading glTF:", err);
 			},
 		);
 	}

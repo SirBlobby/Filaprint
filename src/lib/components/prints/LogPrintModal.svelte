@@ -239,7 +239,7 @@
 						</div>
 						<input
 							type="file"
-							accept=".stl,.obj"
+							accept=".stl,.obj,.gltf,.glb"
 							class="sr-only"
 							onchange={handleFileSelect}
 						/>

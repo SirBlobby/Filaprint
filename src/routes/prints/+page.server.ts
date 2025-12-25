@@ -5,6 +5,9 @@ import { User } from '$lib/models/User';
 import { connectDB } from '$lib/server/db';
 import type { PageServerLoad, Actions } from './$types';
 import { fail, redirect } from '@sveltejs/kit';
+import { unlink } from 'fs/promises';
+import { existsSync } from 'fs';
+import path from 'path';
 
 export const load: PageServerLoad = async ({ locals }) => {
     if (!locals.user) throw redirect(303, '/login');
@@ -142,6 +145,7 @@ export const actions: Actions = {
         const printer_id = formData.get('printer_id');
         const spool_id = formData.get('spool_id');
         const stl_file = formData.get('stl_file');
+        const remove_model = formData.get('remove_model');
 
         if (!id || !name) {
             return fail(400, { missing: true });
@@ -218,9 +222,31 @@ export const actions: Actions = {
             if (spool_id) {
                 updateData.spool_id = spool_id;
             }
-            // Update STL file if provided
+            // Handle STL file: update if new one provided, or remove if requested
             if (stl_file) {
+                // If replacing an existing model, delete the old file
+                if (printJob.stl_file) {
+                    const oldFilePath = path.join('static', printJob.stl_file);
+                    if (existsSync(oldFilePath)) {
+                        try {
+                            await unlink(oldFilePath);
+                        } catch (e) {
+                            console.error('Failed to delete old model file:', e);
+                        }
+                    }
+                }
                 updateData.stl_file = stl_file;
+            } else if (remove_model === 'true' && printJob.stl_file) {
+                // Delete the file from disk
+                const filePath = path.join('static', printJob.stl_file);
+                if (existsSync(filePath)) {
+                    try {
+                        await unlink(filePath);
+                    } catch (e) {
+                        console.error('Failed to delete model file:', e);
+                    }
+                }
+                updateData.stl_file = null;
             }
 
             await PrintJob.findOneAndUpdate(
@@ -246,6 +272,21 @@ export const actions: Actions = {
         await connectDB();
 
         try {
+            // Find the print first to get the model file path
+            const printJob = await PrintJob.findOne({ _id: id, user_id: locals.user.id });
+            
+            if (printJob?.stl_file) {
+                // Delete the model file from disk
+                const filePath = path.join('static', printJob.stl_file);
+                if (existsSync(filePath)) {
+                    try {
+                        await unlink(filePath);
+                    } catch (e) {
+                        console.error('Failed to delete model file:', e);
+                    }
+                }
+            }
+            
             await PrintJob.findOneAndDelete({ _id: id, user_id: locals.user.id });
             return { success: true };
         } catch (error) {

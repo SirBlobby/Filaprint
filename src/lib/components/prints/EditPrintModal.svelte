@@ -101,8 +101,12 @@
 			stlFile = input.files[0];
 			uploadStatus = stlFile.name;
 			uploadProgress = 0;
+			removeModel = false; // Reset remove flag if selecting new file
 		}
 	}
+
+	// Track if user wants to remove the model
+	let removeModel = $state(false);
 </script>
 
 <Modal title="Edit Print Log" {open} onclose={handleClose}>
@@ -119,6 +123,11 @@
 					if (uploadedPath) {
 						formData.set("stl_file", uploadedPath);
 					}
+				}
+
+				// Handle model removal
+				if (removeModel) {
+					formData.set("remove_model", "true");
 				}
 
 				// Convert hours + minutes to total minutes
@@ -222,22 +231,53 @@
 					3D Model {print.stl_file ? "" : "(Optional)"}
 				</label>
 
-				{#if print.stl_file && browser && !stlFile}
+				{#if print.stl_file && browser && !stlFile && !removeModel}
 					<!-- Show existing STL viewer -->
-					<div
-						class="flex justify-center bg-slate-900 rounded-lg p-2"
-					>
-						{#await import("$lib/components/STLViewer.svelte") then { default: STLViewer }}
-							<STLViewer
-								modelPath={print.stl_file}
-								width={400}
-								height={250}
-							/>
-						{/await}
+					<div class="relative">
+						<div
+							class="flex justify-center bg-slate-900 rounded-lg p-2"
+						>
+							{#await import("$lib/components/STLViewer.svelte") then { default: STLViewer }}
+								<STLViewer
+									modelPath={print.stl_file}
+									width={400}
+									height={250}
+								/>
+							{/await}
+						</div>
+						<!-- Remove button overlay -->
+						<button
+							type="button"
+							class="absolute top-4 right-4 p-2 bg-red-500/80 hover:bg-red-500 text-white rounded-lg transition-colors"
+							onclick={() => (removeModel = true)}
+							title="Remove 3D model"
+						>
+							<Icon icon="mdi:delete" class="w-5 h-5" />
+						</button>
 					</div>
 					<p class="text-xs text-slate-500 text-center">
 						Click below to replace with a new model
 					</p>
+				{:else if removeModel && print.stl_file}
+					<!-- Removal confirmation -->
+					<div
+						class="p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-center"
+					>
+						<Icon
+							icon="mdi:file-remove"
+							class="w-10 h-10 text-red-400 mx-auto mb-2"
+						/>
+						<p class="text-sm text-red-300 mb-3">
+							Model will be removed when you save
+						</p>
+						<button
+							type="button"
+							class="text-xs text-slate-400 hover:text-white underline"
+							onclick={() => (removeModel = false)}
+						>
+							Cancel removal
+						</button>
+					</div>
 				{/if}
 
 				<!-- Upload button or progress -->
@@ -280,7 +320,7 @@
 							</div>
 							<input
 								type="file"
-								accept=".stl,.obj"
+								accept=".stl,.obj,.gltf,.glb"
 								class="sr-only"
 								onchange={handleFileSelect}
 							/>

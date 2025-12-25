@@ -5,7 +5,7 @@ import { existsSync } from 'fs';
 import path from 'path';
 
 const UPLOAD_DIR = 'static/uploads/models';
-const ALLOWED_EXTENSIONS = ['.stl', '.obj'];
+const ALLOWED_EXTENSIONS = ['.stl', '.obj', '.gltf', '.glb'];
 
 export const POST: RequestHandler = async ({ request, locals }) => {
     if (!locals.user) {
@@ -24,7 +24,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     const extension = '.' + fileName.split('.').pop();
     
     if (!ALLOWED_EXTENSIONS.includes(extension)) {
-        throw error(400, 'Only STL and OBJ files are allowed');
+        throw error(400, 'Only STL, OBJ, GLTF, and GLB files are allowed');
     }
 
     // Create upload directory if it doesn't exist
