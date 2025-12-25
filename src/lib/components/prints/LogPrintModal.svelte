@@ -26,7 +26,17 @@
   <form
     method="POST"
     action="?/log"
-    use:enhance={() => {
+    use:enhance={({ formData }) => {
+      // Convert hours + minutes to total minutes
+      const hours = Number(formData.get('duration_hours') || 0);
+      const mins = Number(formData.get('duration_mins') || 0);
+      formData.set('duration_minutes', String(hours * 60 + mins));
+
+      // Convert elapsed hours + minutes to total minutes
+      const elapsedHours = Number(formData.get('elapsed_hours') || 0);
+      const elapsedMins = Number(formData.get('elapsed_mins') || 0);
+      formData.set('elapsed_minutes', String(elapsedHours * 60 + elapsedMins));
+
       isSubmitting = true;
       return async ({ update }) => {
         await update();
@@ -152,21 +162,35 @@
           <Icon icon="mdi:information" class="w-4 h-4 inline mr-1" />
           Enter the expected total print time and how long it's been running.
         </p>
-        <div class="grid grid-cols-2 gap-4">
-          <Input
-            label="Total Duration (min)"
-            name="duration_minutes"
-            type="number"
-            placeholder="120"
-            required
-          />
-          <Input
-            label="Already Elapsed (min)"
-            name="elapsed_minutes"
-            type="number"
-            placeholder="0"
-            value="0"
-          />
+        <div class="space-y-3">
+          <div class="space-y-2">
+            <!-- svelte-ignore a11y_label_has_associated_control -->
+            <label class="block text-xs font-medium text-slate-400 uppercase tracking-wider">Total Duration</label>
+            <div class="grid grid-cols-2 gap-2">
+              <div class="relative">
+                <input type="number" name="duration_hours" placeholder="2" min="0" class="w-full rounded-lg bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm text-slate-100 focus:border-blue-500 focus:outline-none pr-8" />
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">hr</span>
+              </div>
+              <div class="relative">
+                <input type="number" name="duration_mins" placeholder="30" min="0" max="59" class="w-full rounded-lg bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm text-slate-100 focus:border-blue-500 focus:outline-none pr-10" />
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">min</span>
+              </div>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <!-- svelte-ignore a11y_label_has_associated_control -->
+            <label class="block text-xs font-medium text-slate-400 uppercase tracking-wider">Already Elapsed</label>
+            <div class="grid grid-cols-2 gap-2">
+              <div class="relative">
+                <input type="number" name="elapsed_hours" placeholder="0" min="0" value="0" class="w-full rounded-lg bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm text-slate-100 focus:border-blue-500 focus:outline-none pr-8" />
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">hr</span>
+              </div>
+              <div class="relative">
+                <input type="number" name="elapsed_mins" placeholder="0" min="0" max="59" value="0" class="w-full rounded-lg bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm text-slate-100 focus:border-blue-500 focus:outline-none pr-10" />
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">min</span>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="grid grid-cols-2 gap-4 mt-3">
           <Input
@@ -187,28 +211,37 @@
       </div>
     {:else}
       <!-- Completed print fields -->
-      <div class="grid grid-cols-3 gap-4">
-        <Input
-          label="Duration (min)"
-          name="duration_minutes"
-          type="number"
-          placeholder="60"
-          required
-        />
-        <Input
-          label="Used (g)"
-          name="filament_used_g"
-          type="number"
-          placeholder="15"
-          required
-        />
-        <Input
-          label="Cost ($)"
-          name="manual_cost"
-          type="number"
-          step="0.01"
-          placeholder="Auto"
-        />
+      <div class="space-y-4">
+        <div class="space-y-2">
+          <!-- svelte-ignore a11y_label_has_associated_control -->
+          <label class="block text-xs font-medium text-slate-400 uppercase tracking-wider">Duration</label>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="relative">
+              <input type="number" name="duration_hours" placeholder="2" min="0" class="w-full rounded-lg bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm text-slate-100 focus:border-blue-500 focus:outline-none pr-8" />
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">hr</span>
+            </div>
+            <div class="relative">
+              <input type="number" name="duration_mins" placeholder="30" min="0" max="59" class="w-full rounded-lg bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm text-slate-100 focus:border-blue-500 focus:outline-none pr-10" />
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">min</span>
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <Input
+            label="Used (g)"
+            name="filament_used_g"
+            type="number"
+            placeholder="15"
+            required
+          />
+          <Input
+            label="Cost ($)"
+            name="manual_cost"
+            type="number"
+            step="0.01"
+            placeholder="Auto"
+          />
+        </div>
       </div>
     {/if}
 

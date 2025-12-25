@@ -1,6 +1,7 @@
 import { PrintJob } from '$lib/models/PrintJob';
 import { Spool } from '$lib/models/Spool';
 import { Printer } from '$lib/models/Printer';
+import { User } from '$lib/models/User';
 import { connectDB } from '$lib/server/db';
 import type { PageServerLoad, Actions } from './$types';
 import { fail, redirect } from '@sveltejs/kit';
@@ -59,14 +60,33 @@ export const actions: Actions = {
             const printer = await Printer.findOne({ _id: printer_id, user_id: locals.user.id });
             if (!printer) return fail(404, { printerNotFound: true });
 
+            // Get user's electricity rate
+            const user = await User.findById(locals.user.id);
+            const electricityRate = user?.electricity_rate || 0.12; // Default $/kWh
+
             const weightUsed = Number(filament_used_g);
+            const durationMins = Number(duration_minutes);
             
-            // Calculate Cost: use manual if provided, otherwise calculate
+            // Calculate Filament Cost: use manual if provided, otherwise calculate
             let costFilament: number;
             if (manual_cost && String(manual_cost).trim() !== '') {
+                // If manual cost provided, it's the total cost (filament + electricity)
                 costFilament = Number(manual_cost);
             } else {
                 costFilament = (spool.price / spool.weight_initial_g) * weightUsed;
+            }
+
+            // Calculate Electricity Cost: Power (kW) × Duration (hours) × Rate ($/kWh)
+            const powerKw = (printer.power_consumption_watts || 0) / 1000;
+            const durationHours = durationMins / 60;
+            const costEnergy = powerKw * durationHours * electricityRate;
+
+            // Total cost = filament + electricity (only if not manual)
+            let totalCost: number;
+            if (manual_cost && String(manual_cost).trim() !== '') {
+                totalCost = Number(manual_cost);
+            } else {
+                totalCost = costFilament + costEnergy;
             }
 
             // 2. Create Print Job
@@ -84,9 +104,10 @@ export const actions: Actions = {
                 name: name || 'Untitled Print',
                 spool_id,
                 printer_id,
-                duration_minutes: Number(duration_minutes),
+                duration_minutes: durationMins,
                 filament_used_g: weightUsed,
-                calculated_cost_filament: Number(costFilament.toFixed(2)),
+                calculated_cost_filament: Number(totalCost.toFixed(2)),
+                calculated_cost_energy: Number(costEnergy.toFixed(2)),
                 status,
                 started_at: startedAt,
                 date: new Date()
@@ -126,19 +147,43 @@ export const actions: Actions = {
         await connectDB();
 
         try {
-            const printJob = await PrintJob.findOne({ _id: id, user_id: locals.user.id }).populate('spool_id');
+            const printJob = await PrintJob.findOne({ _id: id, user_id: locals.user.id }).populate('spool_id').populate('printer_id');
             if (!printJob) return fail(404, { notFound: true });
 
+            // Get user's electricity rate
+            const user = await User.findById(locals.user.id);
+            const electricityRate = user?.electricity_rate || 0.12;
+
             const weightUsed = Number(filament_used_g);
+            const durationMins = Number(duration_minutes);
             
-            // Calculate Cost: use manual if provided, otherwise calculate
+            // Get printer for power calculation
+            const printerForCalc = printer_id 
+                ? await Printer.findById(printer_id)
+                : printJob.printer_id;
+            
+            // Calculate Filament Cost: use manual if provided, otherwise calculate
             let costFilament: number;
             if (manual_cost && String(manual_cost).trim() !== '') {
+                // Manual cost is the total, we'll calculate energy separately for tracking
                 costFilament = Number(manual_cost);
             } else if (printJob.spool_id?.price && printJob.spool_id?.weight_initial_g) {
                 costFilament = (printJob.spool_id.price / printJob.spool_id.weight_initial_g) * weightUsed;
             } else {
-                costFilament = printJob.calculated_cost_filament || 0;
+                costFilament = 0;
+            }
+
+            // Calculate Electricity Cost
+            const powerKw = (printerForCalc?.power_consumption_watts || 0) / 1000;
+            const durationHours = durationMins / 60;
+            const costEnergy = powerKw * durationHours * electricityRate;
+
+            // Total cost
+            let totalCost: number;
+            if (manual_cost && String(manual_cost).trim() !== '') {
+                totalCost = Number(manual_cost);
+            } else {
+                totalCost = costFilament + costEnergy;
             }
 
             // Calculate started_at based on elapsed time for In Progress
@@ -155,9 +200,10 @@ export const actions: Actions = {
             // Build update object
             const updateData: any = {
                 name,
-                duration_minutes: Number(duration_minutes),
+                duration_minutes: durationMins,
                 filament_used_g: weightUsed,
-                calculated_cost_filament: Number(costFilament.toFixed(2)),
+                calculated_cost_filament: Number(totalCost.toFixed(2)),
+                calculated_cost_energy: Number(costEnergy.toFixed(2)),
                 status,
                 started_at: startedAt
             };
