@@ -1,6 +1,6 @@
 # Filaprint
 
-Filaprint is a modern, premium web application designed to help 3D printing enthusiasts manage their filament inventory, track print jobs, view 3D models, and calculate costs and energy usage.
+Filaprint is a modern web application designed to help 3D printing enthusiasts manage their filament inventory, track print jobs, view 3D models, and calculate costs and energy usage.
 
 ![Filaprint Dashboard](https://img.shields.io/badge/Filaprint-3D%20Print%20Manager-blue?style=for-the-badge)
 
