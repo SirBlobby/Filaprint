@@ -123,6 +123,23 @@
 
 	// Track if user wants to remove the model
 	let removeModel = $state(false);
+
+	// Elapsed time state for In Progress prints
+	let elapsedHours = $state(0);
+	let elapsedMins = $state(0);
+
+	$effect(() => {
+		if (print && print.status === "In Progress" && print.started_at) {
+			const start = new Date(print.started_at).getTime();
+			const now = Date.now();
+			const diffMins = Math.max(0, Math.floor((now - start) / 60000));
+			elapsedHours = Math.floor(diffMins / 60);
+			elapsedMins = diffMins % 60;
+		} else {
+			elapsedHours = 0;
+			elapsedMins = 0;
+		}
+	});
 </script>
 
 <Modal title="Edit Print Log" {open} onclose={handleClose}>
@@ -495,7 +512,7 @@
 										name="elapsed_hours"
 										placeholder="0"
 										min="0"
-										value="0"
+										bind:value={elapsedHours}
 										class="w-full rounded-lg bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm text-slate-100 focus:border-blue-500 focus:outline-none pr-8"
 									/>
 									<span
@@ -510,7 +527,7 @@
 										placeholder="0"
 										min="0"
 										max="59"
-										value="0"
+										bind:value={elapsedMins}
 										class="w-full rounded-lg bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm text-slate-100 focus:border-blue-500 focus:outline-none pr-10"
 									/>
 									<span

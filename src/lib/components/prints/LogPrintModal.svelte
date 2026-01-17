@@ -10,9 +10,10 @@
 		printers: any[];
 		spools: any[];
 		onclose: () => void;
+		action?: string;
 	}
 
-	let { open, printers, spools, onclose }: Props = $props();
+	let { open, printers, spools, onclose, action = "?/log" }: Props = $props();
 	let isSubmitting = $state(false);
 	let selectedStatus = $state("Success");
 	let stlFile = $state<File | null>(null);
@@ -85,7 +86,7 @@
 <Modal title="Log a Print" {open} onclose={handleClose}>
 	<form
 		method="POST"
-		action="?/log"
+		{action}
 		use:enhance={async ({ formData }) => {
 			isSubmitting = true;
 
@@ -296,8 +297,11 @@
 					name="printer_id"
 					class="w-full rounded-lg bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm text-slate-100 focus:border-blue-500 focus:outline-none"
 				>
+					<option value="" disabled selected>Select a printer</option>
 					{#each printers as p}
 						<option value={p._id}>{p.name}</option>
+					{:else}
+						<option value="" disabled>No printers found</option>
 					{/each}
 				</select>
 			</div>
@@ -311,11 +315,14 @@
 					name="spool_id"
 					class="w-full rounded-lg bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm text-slate-100 focus:border-blue-500 focus:outline-none"
 				>
+					<option value="" disabled selected>Select a spool</option>
 					{#each spools as s}
 						<option value={s._id}
 							>{s.brand}
 							{s.material} ({s.weight_remaining_g}g left)</option
 						>
+					{:else}
+						<option value="" disabled>No spools found</option>
 					{/each}
 				</select>
 			</div>

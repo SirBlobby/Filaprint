@@ -11,14 +11,14 @@ import path from 'path';
 
 export const load: PageServerLoad = async ({ locals }) => {
     if (!locals.user) throw redirect(303, '/login');
-    
+
     await connectDB();
-    
+
     // Fetch prints with populated fields (Spool and Printer) - filtered by user
     const prints = await PrintJob.find({ user_id: locals.user.id })
         .populate('spool_id', 'brand material color_hex')
         .populate('printer_id', 'name model')
-        .sort({ date: -1 })
+        .sort({ date: -1, _id: -1 })
         .lean();
 
     // Fetch active spools and printers for the "Log Print" form - filtered by user
@@ -26,7 +26,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         Spool.find({ user_id: locals.user.id, is_active: true }).lean(),
         Printer.find({ user_id: locals.user.id }).lean()
     ]);
-    
+
     return {
         prints: JSON.parse(JSON.stringify(prints)),
         spools: JSON.parse(JSON.stringify(spools)),
@@ -37,7 +37,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 export const actions: Actions = {
     log: async ({ request, locals }) => {
         if (!locals.user) return fail(401, { unauthorized: true });
-        
+
         const formData = await request.formData();
         const name = formData.get('name');
         const spool_id = formData.get('spool_id');
@@ -71,7 +71,7 @@ export const actions: Actions = {
 
             const weightUsed = Number(filament_used_g);
             const durationMins = Number(duration_minutes);
-            
+
             // Calculate Filament Cost: use manual if provided, otherwise calculate
             let costFilament: number;
             if (manual_cost && String(manual_cost).trim() !== '') {
@@ -96,14 +96,14 @@ export const actions: Actions = {
 
             // 2. Create Print Job
             const isInProgress = status === 'In Progress';
-            
+
             // Calculate started_at based on elapsed time
             let startedAt: Date | null = null;
             if (isInProgress) {
                 const elapsedMs = Number(elapsed_minutes || 0) * 60 * 1000;
                 startedAt = new Date(Date.now() - elapsedMs);
             }
-            
+
             await PrintJob.create({
                 user_id: locals.user.id,
                 name: name || 'Untitled Print',
@@ -134,7 +134,7 @@ export const actions: Actions = {
 
     edit: async ({ request, locals }) => {
         if (!locals.user) return fail(401, { unauthorized: true });
-        
+
         const formData = await request.formData();
         const id = formData.get('id');
         const name = formData.get('name');
@@ -165,17 +165,17 @@ export const actions: Actions = {
 
             const weightUsed = Number(filament_used_g);
             const durationMins = Number(duration_minutes);
-            
+
             // Get printer for power calculation
-            const printerForCalc = printer_id 
+            const printerForCalc = printer_id
                 ? await Printer.findById(printer_id)
                 : printJob.printer_id;
-            
+
             // Get correct spool for cost calculation (use new spool if provided, else existing)
-            const spoolForCalc = spool_id 
+            const spoolForCalc = spool_id
                 ? await Spool.findById(spool_id)
                 : printJob.spool_id;
-            
+
             // Calculate Filament Cost: use manual if provided, otherwise calculate
             let costFilament: number;
             if (manual_cost && String(manual_cost).trim() !== '') {
@@ -203,7 +203,7 @@ export const actions: Actions = {
             // Calculate started_at based on elapsed time for In Progress
             const isInProgress = status === 'In Progress';
             let startedAt = printJob.started_at;
-            
+
             if (isInProgress && elapsed_minutes) {
                 const elapsedMs = Number(elapsed_minutes) * 60 * 1000;
                 startedAt = new Date(Date.now() - elapsedMs);
@@ -271,7 +271,7 @@ export const actions: Actions = {
 
     delete: async ({ request, locals }) => {
         if (!locals.user) return fail(401, { unauthorized: true });
-        
+
         const formData = await request.formData();
         const id = formData.get('id');
 
@@ -282,7 +282,7 @@ export const actions: Actions = {
         try {
             // Find the print first to get the model file path
             const printJob = await PrintJob.findOne({ _id: id, user_id: locals.user.id });
-            
+
             if (printJob?.stl_file) {
                 // Delete the model file from disk
                 const filePath = path.join('static', printJob.stl_file);
@@ -294,7 +294,7 @@ export const actions: Actions = {
                     }
                 }
             }
-            
+
             await PrintJob.findOneAndDelete({ _id: id, user_id: locals.user.id });
             return { success: true };
         } catch (error) {
@@ -305,7 +305,7 @@ export const actions: Actions = {
 
     duplicate: async ({ request, locals }) => {
         if (!locals.user) return fail(401, { unauthorized: true });
-        
+
         const formData = await request.formData();
         const id = formData.get('id');
 

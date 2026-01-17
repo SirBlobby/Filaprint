@@ -4,21 +4,18 @@ Filaprint is a modern, premium web application designed to help 3D printing enth
 
 ![Filaprint Dashboard](https://img.shields.io/badge/Filaprint-3D%20Print%20Manager-blue?style=for-the-badge)
 
-## 🛠️ Technology Stack
+## Technology Stack
 
--   **Framework:** SvelteKit (Svelte 5)
+-   **Framework:** SvelteKit
 -   **Language:** TypeScript
--   **Styling:** Tailwind CSS v4 (Cerberus Theme)
--   **State Management:** Svelte 5 Runes
--   **Build Tool:** Vite
+-   **Styling:** Tailwind CSS
 -   **3D Rendering:** Three.js (STL & OBJ loaders)
 -   **Data Visualization:** Chart.js
 -   **Icons:** Iconify (@iconify/svelte)
--   **Database:** MongoDB with Mongoose
--   **Authentication:** JWT with bcrypt password hashing
+-   **Database:** MongoDB
 -   **Container:** Docker with Docker Compose
 
-## ✨ Features
+## Features
 
 ### 1. Dashboard
 
@@ -91,88 +88,13 @@ Filaprint is a modern, premium web application designed to help 3D printing enth
 -   **Admin Panel:** Manage users (Admin role only).
 -   **Role-Based Access:** Admin and User roles with appropriate permissions.
 
-## 🗂️ Data Models (Mongoose Schemas)
-
-### User Schema
-
--   `_id`: ObjectId
--   `username`: String (Required, Unique)
--   `password`: String (Hashed with bcrypt)
--   `role`: String (Enum: User, Admin)
--   `location`: String
--   `electricity_rate`: Number (Default: 0.12 $/kWh)
--   `currency`: String (Default: USD)
--   `createdAt`: Date
-
-### Spool Schema
-
--   `_id`: ObjectId
--   `user_id`: ObjectId (Ref: User)
--   `brand`: String (Required)
--   `material`: String (Required, Enum: PLA, PETG, ABS, ASA, TPU, Other)
--   `color_hex`: String (Default: #ffffff)
--   `weight_initial_g`: Number (Required)
--   `weight_remaining_g`: Number (Required)
--   `price`: Number
--   `purchased_at`: Date
--   `is_active`: Boolean (Default: true)
-
-### Printer Schema
-
--   `_id`: ObjectId
--   `user_id`: ObjectId (Ref: User)
--   `name`: String (Required)
--   `model`: String
--   `nozzle_diameter_mm`: Number (Default: 0.4)
--   `power_consumption_watts`: Number (Default: 0)
-
-### PrintJob Schema
-
--   `_id`: ObjectId
--   `user_id`: ObjectId (Ref: User)
--   `printer_id`: ObjectId (Ref: Printer)
--   `spool_id`: ObjectId (Ref: Spool)
--   `name`: String
--   `duration_minutes`: Number
--   `filament_used_g`: Number
--   `calculated_cost_filament`: Number (Total cost including electricity)
--   `calculated_cost_energy`: Number (Electricity cost only)
--   `status`: String (Enum: Success, Fail, Cancelled, In Progress)
--   `started_at`: Date (For In Progress jobs)
--   `stl_file`: String (Path to uploaded 3D model)
--   `date`: Date (Default: Date.now)
-
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
 -   Node.js 18+ or Bun
 -   MongoDB instance (local or Atlas)
 -   Docker (optional, for containerized deployment)
-
-### Local Development
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/filaprint.git
-cd filaprint
-
-# Install dependencies
-bun install
-
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your MongoDB URI and JWT secret
-
-# Run development server
-bun run dev
-
-# Build for production
-bun run build
-
-# Start production server
-bun run start
-```
 
 ### Docker Deployment
 
@@ -208,40 +130,7 @@ MONGO_USER=admin
 MONGO_PASSWORD=changeme
 ```
 
-## 📁 Project Structure
-
-```
-filaprint/
-├── src/
-│   ├── lib/
-│   │   ├── components/
-│   │   │   ├── ui/           # Base UI components (Button, Card, Input, Modal)
-│   │   │   ├── prints/       # Print-specific components (LogPrintModal, EditPrintModal)
-│   │   │   ├── STLViewer.svelte  # 3D model viewer (STL & OBJ)
-│   │   │   └── Navbar.svelte
-│   │   ├── models/           # Mongoose schemas
-│   │   └── server/           # Server utilities (db connection, auth)
-│   ├── routes/
-│   │   ├── admin/users/      # Admin user management
-│   │   ├── analytics/        # Analytics dashboard
-│   │   ├── api/upload-stl/   # 3D model upload endpoint
-│   │   ├── library/          # 3D model library
-│   │   ├── login/            # Authentication
-│   │   ├── printers/         # Printer management
-│   │   ├── prints/           # Print job logging
-│   │   ├── register/         # User registration
-│   │   ├── settings/         # User settings
-│   │   └── spools/           # Filament inventory
-│   └── app.css               # Global styles (Cerberus theme)
-├── static/
-│   └── uploads/models/       # Uploaded 3D model files
-├── server/                   # Production server
-├── Dockerfile                # Container build instructions
-├── docker-compose.yml        # Container orchestration
-└── package.json
-```
-
-## ✅ Completed Features
+## Completed Features
 
 -   [x] User authentication (Login/Register)
 -   [x] Dashboard with live stats and active print tracking
@@ -263,18 +152,13 @@ filaprint/
 -   [x] Responsive design
 -   [x] Docker containerization
 
-## 🔮 Future Enhancements
+## Future Features
 
 -   [ ] QR/Barcode scanning for quick spool lookup
--   [ ] Photo uploads for print jobs
--   [ ] Export data (CSV/PDF reports)
 -   [ ] Multi-language support
--   [ ] Dark/Light theme toggle
--   [ ] Email notifications
--   [ ] Print job templates
--   [ ] 3D printer integration (OctoPrint, Klipper)
+-   [ ] Some notifications
 -   [ ] Thumbnail generation for 3D models
 
-## 📄 License
+## License
 
 MIT License - See LICENSE file for details.
